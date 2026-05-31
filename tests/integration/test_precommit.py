@@ -1,10 +1,9 @@
-"""Phase 7: annotation and ruff-format run as pre-commit hooks, not Fabric
+"""Annotation and ruff-format run as pre-commit hooks, not Fabric
 tasks, because they rewrite files on the way into a commit rather than on
 demand.
 
-These tests do not invoke pre-commit. They pin the contract the dogfooding
-notes and AGENTS.md code-style section rely on: the dogfooded
-sqlalchemy-annotate tool runs against the real models package at the
+These tests do not invoke pre-commit. They pin the hook contract: the
+dogfooded sqlalchemy-annotate tool runs against the real models package at the
 production dialect, ruff comes from the official mirror, and the three hooks
 fire in the one order in which the tools converge in a single pass
 (annotate -> ruff --fix -> ruff-format).
@@ -54,6 +53,37 @@ def test_ruff_hooks_come_from_the_official_mirror() -> None:
 
     lint = next(h for h in ruff_repo["hooks"] if h["id"] == "ruff")
     assert "--fix" in lint["args"]
+
+
+def test_mypy_hook_type_checks_app() -> None:
+    repos = _config()["repos"]
+    hooks = [h for repo in repos for h in repo["hooks"]]
+    mypy = next(h for h in hooks if h["id"] == "mypy")
+
+    # Strict type check on app/, run from the project env so it sees the same
+    # dependencies and stubs `pave typecheck` does.
+    assert "mypy app/" in mypy["entry"]
+    assert mypy["language"] == "system"
+    assert mypy["pass_filenames"] is False
+
+
+def test_standard_hygiene_hooks_present() -> None:
+    repos = _config()["repos"]
+    hygiene = next(
+        r
+        for r in repos
+        if r["repo"] == "https://github.com/pre-commit/pre-commit-hooks"
+    )
+    ids = {h["id"] for h in hygiene["hooks"]}
+    expected = {
+        "trailing-whitespace",
+        "end-of-file-fixer",
+        "check-yaml",
+        "check-toml",
+        "check-added-large-files",
+        "check-merge-conflict",
+    }
+    assert expected <= ids, f"missing hygiene hooks: {expected - ids}"
 
 
 def test_hook_order_is_annotate_then_lint_then_format() -> None:

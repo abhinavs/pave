@@ -34,9 +34,7 @@ def _wants_html(request: Request) -> bool:
     return True
 
 
-def _render_error(
-    request: Request, *, template: str, status_code: int
-) -> Response:
+def _render_error(request: Request, *, template: str, status_code: int) -> Response:
     """Render an error template with the request id surfaced.
 
     We deliberately do not look up the current user here: the exception
@@ -62,11 +60,10 @@ async def http_exception_handler(
     we keep returning the JSON detail there. Returning HTML for a 401
     from an XHR would mask the real problem at the call site."""
     if exc.status_code == status.HTTP_404_NOT_FOUND and _wants_html(request):
-        return _render_error(
-            request, template="errors/404.html", status_code=404
-        )
+        return _render_error(request, template="errors/404.html", status_code=404)
     return JSONResponse(
-        {"detail": exc.detail}, status_code=exc.status_code,
+        {"detail": exc.detail},
+        status_code=exc.status_code,
         headers=getattr(exc, "headers", None),
     )
 
@@ -87,9 +84,7 @@ async def server_error_handler(request: Request, exc: Exception) -> Response:
             {"detail": "internal server error", "request_id": request_id},
             status_code=500,
         )
-    return _render_error(
-        request, template="errors/500.html", status_code=500
-    )
+    return _render_error(request, template="errors/500.html", status_code=500)
 
 
 def install_error_handlers(app: FastAPI) -> None:

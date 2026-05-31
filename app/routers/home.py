@@ -1,7 +1,7 @@
 """The landing page.
 
-Kept separate from the Phase 5 content router (which serves /{slug} markdown
-pages): the index adapts to login state, content pages do not.
+Kept separate from the content router (which serves /{slug} markdown pages):
+the index adapts to login state, content pages do not.
 """
 
 from fastapi import APIRouter, Depends, Request
@@ -49,6 +49,4 @@ async def components(
     agents can see what is available at a glance. Lives next to the
     landing page because it is informational, not gated.
     """
-    return templates.TemplateResponse(
-        request, "components.html", {"user": user}
-    )
+    return templates.TemplateResponse(request, "components.html", {"user": user})

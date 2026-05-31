@@ -39,7 +39,7 @@ async def test_index_ships_favicon_and_theme_boot(async_client: AsyncClient) -> 
     script that prevents a flash of the wrong palette."""
     resp = await async_client.get("/")
     body = resp.text
-    assert '/static/img/favicon.svg' in body
+    assert "/static/img/favicon.svg" in body
     assert "pave-theme" in body  # the localStorage key the boot script reads
 
 

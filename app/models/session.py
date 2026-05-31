@@ -50,9 +50,7 @@ class Session(Base):
 
     __tablename__ = "sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
@@ -60,9 +58,7 @@ class Session(Base):
     # SHA-256 hex = 64 chars. We store the hash so an attacker with a
     # DB dump cannot forge a cookie - they would need the unhashed
     # token, which never lands on disk on our side.
-    token_hash: Mapped[str] = mapped_column(
-        String(64), unique=True, index=True
-    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
 
     user_agent: Mapped[str | None] = mapped_column(String(255), default=None)
     # IPv6 textual form maxes out at 39 chars; 45 gives a little slack

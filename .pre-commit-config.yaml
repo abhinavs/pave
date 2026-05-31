@@ -1,11 +1,12 @@
 # Pre-commit hooks for Pave.
 #
-# Two jobs that do not belong in a Fabric task because they rewrite files on
+# The Python jobs do not belong in a Fabric task because they rewrite files on
 # the way into a commit, not on demand:
 #
 #   1. sqlalchemy-annotate keeps the "== Schema Information" blocks in
 #      app/models/ in sync with Base.metadata.
 #   2. ruff fixes lint (import order included) and then formats.
+#   3. mypy type-checks app/ in strict mode (same as `pave typecheck`).
 #
 # Hook order is deliberate and the tools converge in exactly one pass:
 # annotate writes a fresh schema block whose import spacing ruff's isort
@@ -17,6 +18,17 @@
 # Run against everything:  .venv/bin/pre-commit run --all-files
 
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
   - repo: local
     hooks:
       - id: sqlalchemy-annotate
@@ -37,3 +49,14 @@ repos:
         args: [--fix]
       - id: ruff-format
         name: ruff (format)
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict type check on app/)
+        # Run from the project environment so mypy sees the same dependencies
+        # and stubs `pave typecheck` does. Runs last, on already-formatted code.
+        entry: mypy app/
+        language: system
+        pass_filenames: false
+        files: ^app/.*\.py$

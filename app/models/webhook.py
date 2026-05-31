@@ -22,6 +22,7 @@ from app.database import Base
 #
 # == End Schema Information
 
+
 class WebhookEvent(Base):
     """A received webhook, persisted before any processing.
 
@@ -32,9 +33,7 @@ class WebhookEvent(Base):
 
     __tablename__ = "webhook_events"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     slug: Mapped[str] = mapped_column(String(128), index=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)

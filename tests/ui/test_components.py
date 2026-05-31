@@ -1,4 +1,4 @@
-"""Phase 5: every reusable component in templates/_components/ renders.
+"""Every reusable component in templates/_components/ renders.
 
 Components are standalone Jinja partials (no `{% extends %}`) so they can be
 `{% include %}`d anywhere. Each is rendered here with a representative

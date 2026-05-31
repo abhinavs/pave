@@ -11,11 +11,10 @@ Pulling the send off the request path fixes both: the route commits the user
 and enqueues this job, Soniq runs it with its own retry/backoff, and signup
 returns 303 in single-digit milliseconds.
 
-The job follows the AGENTS.md contract: it receives an id, never a full ORM
-object, and the session is a parameter. The verification token is minted
-*inside* the job from the user's current id so a queued send that runs after
-an account is deleted does nothing instead of leaking a token for a row that
-no longer exists.
+The job receives an id, never a full ORM object, and the session is a
+parameter. The verification token is minted *inside* the job from the user's
+current id so a queued send that runs after an account is deleted does nothing
+instead of leaking a token for a row that no longer exists.
 """
 
 import uuid

@@ -62,9 +62,7 @@ async def test_middleware_increments_counter_on_request() -> None:
     # Read the counter via the registry, since the middleware writes to
     # the module-global. We just check the value moved up by at least one
     # over a request - other tests may have incremented it too.
-    sample = http_requests_total.labels(
-        method="GET", route="/ping", status="200"
-    )
+    sample = http_requests_total.labels(method="GET", route="/ping", status="200")
     before = sample._value.get()  # type: ignore[attr-defined]
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

@@ -16,6 +16,7 @@ from app.utils.prefixed_id import PrefixedUUID, decode, encode
 
 # ---------------------------------------------------------------- codec ----
 
+
 def test_encode_is_deterministic_and_prefixed() -> None:
     u = uuid.UUID("8400e029-2f4a-7d62-9c5e-1d8a2b3c4d5e")
     s = encode("user", u)

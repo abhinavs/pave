@@ -27,6 +27,7 @@ from app.database import Base
 #
 # == End Schema Information
 
+
 class User(Base):
     """An account. Password-based or OAuth-linked, possibly both.
 
@@ -37,9 +38,7 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
 

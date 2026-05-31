@@ -131,9 +131,7 @@ class ContentLoader:
 
     def posts(self) -> list[Doc]:
         published = [d for d in self._docs("blog").values() if d.published]
-        return sorted(
-            published, key=lambda d: d.date or date.min, reverse=True
-        )
+        return sorted(published, key=lambda d: d.date or date.min, reverse=True)
 
     def get_post(self, slug: str) -> Doc | None:
         doc = self._docs("blog").get(slug)

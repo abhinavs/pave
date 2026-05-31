@@ -10,9 +10,7 @@ from math import ceil
 from app.schemas.common import PaginatedResponse
 
 
-def paginate[T](
-    items: list[T], page: int, per_page: int
-) -> PaginatedResponse[T]:
+def paginate[T](items: list[T], page: int, per_page: int) -> PaginatedResponse[T]:
     total = len(items)
     pages = max(1, ceil(total / per_page)) if per_page > 0 else 1
     page = max(1, min(page, pages))

@@ -1,4 +1,4 @@
-"""Phase 5: blog, pages, sitemap and RSS over the real `content/` tree.
+"""Blog, pages, sitemap and RSS over the real `content/` tree.
 
 These run against the seeded content shipped in the repo, so they also
 guard that the seed files stay parseable and published.

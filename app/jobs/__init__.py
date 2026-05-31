@@ -6,11 +6,9 @@ The worker process imports this module via `SONIQ_JOBS_MODULES=app.jobs` to
 discover the registered job.
 
 Soniq has no database-session injection: a job receives only its arguments
-(and an optional `JobContext`). AGENTS.md still requires that the job
-*receive* a session rather than open one. We satisfy both with a thin
-registered adapter: it owns the per-job session boundary (the job-side
-equivalent of the `get_db` request dependency) and delegates to the pure,
-session-as-parameter logic in `process_payload`.
+(and an optional `JobContext`). A thin registered adapter owns the per-job
+session boundary (the job-side equivalent of the `get_db` request dependency)
+and delegates to the pure, session-as-parameter logic in `process_payload`.
 """
 
 import uuid

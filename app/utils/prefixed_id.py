@@ -85,7 +85,7 @@ def decode(prefix: str, value: str) -> uuid.UUID:
     sep = f"{prefix}_"
     if not value.startswith(sep):
         raise ValueError(f"expected prefix {prefix!r}, got {value!r}")
-    body = value[len(sep):]
+    body = value[len(sep) :]
     if len(body) != _BODY_LEN:
         raise ValueError(
             f"expected a {_BODY_LEN}-char body after {prefix!r}, got {len(body)}"
