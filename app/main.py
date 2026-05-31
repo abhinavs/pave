@@ -24,7 +24,7 @@ from app.routers import (
     webhooks,
 )
 from app.services.metrics import install_metrics
-from app.settings import settings
+from app.settings import assert_secret_key_is_production_safe, settings
 
 log = structlog.get_logger()
 
@@ -32,6 +32,8 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     configure_logging()
+    # Fail fast in production rather than serve with a guessable signing key.
+    assert_secret_key_is_production_safe(settings)
     log.info("startup", app=settings.app_name, version=settings.app_version)
     async with engine.begin():
         pass  # connection check

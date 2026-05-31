@@ -291,19 +291,19 @@ Every setting has a home in three places:
 | `app/settings.py` | Typed field on the `Settings` class                             |
 
 If you add a setting to `app/settings.py` without adding it to both
-`.env.example` and `.env.schema`, the next developer to clone the project
-will get a confusing startup error when Pydantic refuses to load.
+`.env.example` and `.env.schema`, the env-consistency test in
+`tests/integration/test_template.py` fails (it checks all three stay in sync).
+Run `pave check-env` to confirm every variable marked `required` in the schema
+is actually set in the current environment.
 
 ```
-# .env.schema
+# .env.schema  (KEY=required | optional | optional:default)
 DATABASE_URL=required
 SECRET_KEY=required
-SONIQ_DATABASE_URL=required
 ALLOWED_HOSTS=required
+SONIQ_DATABASE_URL=optional
 EMAIL_API_KEY=optional
-EMAIL_API_URL=optional
 SENTRY_DSN=optional
-WEBHOOQ_ENDPOINT=optional
 ENABLE_METRICS=optional:false
 DEBUG=optional:false
 LOG_LEVEL=optional:info
