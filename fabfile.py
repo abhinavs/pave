@@ -32,6 +32,14 @@ DEPLOY_USER = "deploy"
 APP_DIR = "/srv/pave"
 RELEASES_DIR = f"{APP_DIR}/releases"
 CURRENT = f"{APP_DIR}/current"
+# Release-independent shared env file (see C1 / deploy/*.service). systemd
+# loads it for the services; ad-hoc tasks must source it themselves.
+SHARED_ENV = f"{APP_DIR}/shared/.env.production"
+
+# How many release dirs to keep after a deploy. Each carries its own venv
+# (100-300MB), so unbounded growth fills the disk. Keep enough that rollback
+# always has a target.
+KEEP_RELEASES = 5
 
 
 def _target() -> dict[str, str]:
@@ -45,6 +53,16 @@ def _conn() -> Connection:
     return Connection(host=t["host"], user=DEPLOY_USER)
 
 
+def _with_env(command: str) -> str:
+    """Wrap a remote command so it runs with .env.production loaded.
+
+    systemd loads the env file for the services, but an ad-hoc Fabric task
+    gets a bare login shell where DATABASE_URL is unset. Source the shared
+    env file first so psql/pg_dump/restore see the connection string.
+    """
+    return f"set -a && . {SHARED_ENV} && set +a && {command}"
+
+
 def _emit_deploy_event(release: str) -> None:
     """Best-effort deploy.success to Webhooq. httpx, not vrk: vrk grab is GET."""
     endpoint = settings.webhooq_endpoint
@@ -56,8 +74,10 @@ def _emit_deploy_event(release: str) -> None:
             json={"event": "deploy.success", "release": release},
             timeout=5,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        # Best-effort, so a failure never blocks the deploy, but it must be
+        # visible: a silently-swallowed error hides a misconfigured endpoint.
+        print(f"warning: deploy event POST to {endpoint} failed: {exc}")
 
 
 # --- environment selectors ------------------------------------------------
@@ -92,7 +112,9 @@ def validate(c):
         "bin/tailwindcss -i static/css/source.css -o static/css/app.css --minify",
         pty=True,
     )
-    c.run("pave migrate", pty=True)
+    # Verify migrations against a throwaway db: the gate must never apply
+    # migrations to the operator's real (configured) database.
+    c.run("pave check-migrations", pty=True)
     c.run("pave test", pty=True)
     c.run("pave typecheck", pty=True)
     print("validate: all checks passed")
@@ -110,6 +132,17 @@ def deploy(c):
     """
     validate(c)
 
+    # Preflight: the release is named after the HEAD commit, so refuse to ship
+    # anything that would make that name lie. A dirty tree means the rsynced
+    # working dir differs from the commit; an unpushed HEAD means shipping a
+    # commit no teammate or CI has ever seen.
+    if c.run("git status --porcelain", hide=True).stdout.strip():
+        sys.exit("deploy aborted: working tree is dirty; commit or stash first")
+    if not c.run(
+        "git branch -r --contains HEAD", hide=True, warn=True
+    ).stdout.strip():
+        sys.exit("deploy aborted: HEAD is not on origin; push it first")
+
     t = _target()
     conn = _conn()
     release = c.run("vrk epoch --now", hide=True).stdout.strip()
@@ -118,14 +151,24 @@ def deploy(c):
     release_path = f"{RELEASES_DIR}/{release_name}"
 
     conn.run(f"mkdir -p {release_path}")
+    # Honour .gitignore so local .env secrets, the dev sqlite db, and tool
+    # caches never ship; --delete keeps a reused release dir from carrying
+    # stale files. The built static/css/app.css is tracked, so it still ships.
     c.run(
-        f"rsync -az --exclude .git --exclude .venv ./ "
+        f"rsync -az --filter=':- .gitignore' --exclude .git --delete ./ "
         f"{DEPLOY_USER}@{t['host']}:{release_path}/"
     )
     with conn.cd(release_path):
         conn.run("python -m venv .venv")
         conn.run(".venv/bin/pip install -q -r requirements.txt")
         conn.run(".venv/bin/alembic upgrade head")
+
+    # Point this release's static/uploads at the persistent shared dir so
+    # user uploads (avatars) survive the next deploy instead of being wiped
+    # with the old release. .gitignore excludes static/uploads, so rsync never
+    # ships a real directory here to collide with the symlink.
+    conn.run(f"mkdir -p {APP_DIR}/shared/uploads")
+    conn.run(f"ln -sfn {APP_DIR}/shared/uploads {release_path}/static/uploads")
 
     conn.run(f"ln -sfn {release_path} {CURRENT}")
     conn.run("sudo systemctl restart pave-api pave-worker")
@@ -143,6 +186,23 @@ def deploy(c):
         rollback(c)
         sys.exit(f"deploy aborted: {domain} did not become healthy")
 
+    # The /health probe only covers the API. Confirm the worker is up too, so a
+    # crash-on-start (bad job import, missing env) cannot ship as a green deploy
+    # with a silently-dead job queue.
+    worker = conn.run("systemctl is-active --quiet pave-worker", warn=True)
+    if not worker.ok:
+        print("worker is not active, rolling back")
+        rollback(c)
+        sys.exit("deploy aborted: pave-worker did not come up")
+
+    # Prune old releases now the new one is live and healthy. Release names are
+    # timestamp-prefixed, so a lexical sort is chronological; keep the newest
+    # KEEP_RELEASES (the live one plus rollback targets) and delete the rest.
+    conn.run(
+        f"ls -1d {RELEASES_DIR}/*/ | sort | head -n -{KEEP_RELEASES} | "
+        f"xargs -r rm -rf"
+    )
+
     _emit_deploy_event(release_name)
     print(f"deployed {release_name} to {domain}")
 
@@ -151,8 +211,11 @@ def deploy(c):
 def rollback(c):
     """Point `current` back at the previous release and restart services."""
     conn = _conn()
+    # Order by name, not mtime: release dirs are timestamp-prefixed, so a
+    # reverse name sort is the stable chronological order (rsync and restores
+    # rewrite mtimes, which would scramble `ls -t`). Second entry = previous.
     previous = conn.run(
-        f"ls -1dt {RELEASES_DIR}/*/ | sed -n 2p", hide=True
+        f"ls -1d {RELEASES_DIR}/*/ | sort -r | sed -n 2p", hide=True
     ).stdout.strip()
     if not previous:
         sys.exit("no previous release to roll back to")
@@ -176,7 +239,7 @@ def ssh(c):
 @task
 def psql(c):
     """Open psql against the production database on the host."""
-    _conn().run("psql $DATABASE_URL", pty=True)
+    _conn().run(_with_env('psql "$DATABASE_URL"'), pty=True)
 
 
 @task
@@ -186,17 +249,29 @@ def backup(c):
     stamp = c.run("vrk epoch --now", hide=True).stdout.strip()
     path = f"{APP_DIR}/backups/db-{stamp}.sql.gz"
     conn.run(f"mkdir -p {APP_DIR}/backups")
-    conn.run(f"pg_dump $DATABASE_URL | gzip > {path}")
+    conn.run(_with_env(f'pg_dump "$DATABASE_URL" | gzip > {path}'))
     conn.run(f"vrk digest --algo sha256 --file {path} --compare")
     print(f"backup written and verified: {path}")
 
 
 @task
-def restore(c, path):
-    """Restore the database from a gzipped dump path on the host."""
+def restore(c, path, yes=False):
+    """Restore the database from a gzipped dump path on the host.
+
+    Destructive, so it is guarded: pass --yes to confirm. A safety backup of
+    the current database is taken first, and the restore runs in a single
+    transaction so a corrupt dump rolls back cleanly instead of half-applying.
+    """
+    if not yes:
+        sys.exit(
+            "restore aborted: this overwrites the live database. "
+            "Re-run with --yes to confirm."
+        )
     conn = _conn()
     conn.run(f"vrk digest --algo sha256 --file {path} --compare")
-    conn.run(f"gunzip -c {path} | psql $DATABASE_URL")
+    # Safety net: snapshot the current state before clobbering it.
+    backup(c)
+    conn.run(_with_env(f'gunzip -c {path} | psql --single-transaction "$DATABASE_URL"'))
     conn.run("sudo systemctl restart pave-api pave-worker")
     print(f"restored from {path}")
 

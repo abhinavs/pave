@@ -13,7 +13,8 @@ Type=simple
 User=deploy
 Group=deploy
 WorkingDirectory=/srv/pave/current
-EnvironmentFile=/srv/pave/current/.env.production
+# Shared, release-independent env file (see pave-api.service for why).
+EnvironmentFile=/srv/pave/shared/.env.production
 
 # `pave worker` runs soniq.run_worker(). Concurrency is a worker concern,
 # not a deploy concern: tune it here, not in fabfile.
@@ -23,9 +24,14 @@ KillMode=mixed
 Restart=always
 RestartSec=5
 
+# Hardening (see pave-api.service). The worker writes nothing to disk, but
+# shares the same read-only-FS posture; shared stays writable for parity.
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=full
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/pave/shared
 
 [Install]
 WantedBy=multi-user.target

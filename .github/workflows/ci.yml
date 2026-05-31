@@ -74,6 +74,15 @@ jobs:
       - name: Type check (mypy)
         run: pave typecheck
 
+      # Mirror fab validate's CSS build so a broken source.css fails CI, not
+      # the deploy. Uses the Tailwind v3 standalone binary (no Node toolchain).
+      - name: Build CSS (tailwind)
+        run: |
+          curl -fsSL -o bin/tailwindcss \
+            https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-linux-x64
+          chmod +x bin/tailwindcss
+          bin/tailwindcss -i static/css/source.css -o static/css/app.css --minify
+
       - name: Apply migrations
         run: pave migrate
 

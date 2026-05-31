@@ -38,7 +38,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
-from app.services.email import send_email
+from app.email import send_email
 
 
 async def send_welcome(user_id: uuid.UUID, db: AsyncSession) -> None:

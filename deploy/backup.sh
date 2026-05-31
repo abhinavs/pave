@@ -10,7 +10,7 @@ set -euo pipefail
 APP_DIR="/srv/pave"
 BACKUP_DIR="${APP_DIR}/backups"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
-ENV_FILE="${APP_DIR}/current/.env.production"
+ENV_FILE="${APP_DIR}/shared/.env.production"
 
 # DATABASE_URL lives in the same env file the services load.
 # shellcheck disable=SC1090

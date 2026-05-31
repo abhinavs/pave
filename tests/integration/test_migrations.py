@@ -32,3 +32,24 @@ def test_migrations_round_trip(tmp_path: Path) -> None:
 
     down = _alembic(["downgrade", "base"], db_url)
     assert down.returncode == 0, f"downgrade failed:\n{down.stderr}"
+
+
+def test_check_migrations_does_not_touch_database_url() -> None:
+    """`pave check-migrations` verifies the chain against a throwaway sqlite
+    db, so it succeeds even when DATABASE_URL points at an unreachable host.
+    That is the whole point: the deploy gate must never mutate a real db."""
+    env = {
+        **os.environ,
+        "USE_SQLITE": "false",
+        # Deliberately unreachable: if the command touched this, it would fail.
+        "DATABASE_URL": "postgresql://nobody@127.0.0.1:1/does_not_exist",
+        "SECRET_KEY": "test-secret-key",
+    }
+    result = subprocess.run(
+        [sys.executable, "-m", "app.cli", "check-migrations"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, f"check-migrations failed:\n{result.stderr}"

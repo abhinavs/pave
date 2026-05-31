@@ -153,9 +153,12 @@ Remember the password. You will paste it into `DATABASE_URL` in a moment.
 ### Create the release directory
 
 ```bash
-mkdir -p /srv/pave/releases
+mkdir -p /srv/pave/releases /srv/pave/shared
 chown -R deploy:deploy /srv/pave
 ```
+
+`/srv/pave/shared` holds files that must survive a deploy: the env file lives
+there, not in a release directory, because rsync replaces `current` each time.
 
 ### Place `.env.production`
 
@@ -163,7 +166,7 @@ As `deploy`:
 
 ```bash
 ssh deploy@your-server
-nano /srv/pave/.env.production
+nano /srv/pave/shared/.env.production
 ```
 
 Minimum contents:
@@ -173,6 +176,7 @@ DATABASE_URL=postgresql://pave:THE-PASSWORD@localhost/pave_production
 SONIQ_DATABASE_URL=postgresql://pave:THE-PASSWORD@localhost/pave_production
 SECRET_KEY=PASTE-THE-OUTPUT-OF-THE-COMMAND-BELOW
 ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+BASE_URL=https://your-domain.com
 DEBUG=false
 LOG_LEVEL=info
 ```

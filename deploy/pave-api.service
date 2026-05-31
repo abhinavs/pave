@@ -15,7 +15,9 @@ Type=notify
 User=deploy
 Group=deploy
 WorkingDirectory=/srv/pave/current
-EnvironmentFile=/srv/pave/current/.env.production
+# Env lives outside the release dirs: rsync replaces /srv/pave/current every
+# deploy, so a release-relative path would vanish. /srv/pave/shared is stable.
+EnvironmentFile=/srv/pave/shared/.env.production
 
 # RuntimeDirectory creates and owns /run/pave for the Unix socket nginx
 # proxies to. It is recreated on every start, so no stale socket survives.
@@ -34,10 +36,14 @@ KillMode=mixed
 Restart=always
 RestartSec=3
 
-# Hardening: the app needs nothing outside its release dir and /run/pave.
+# Hardening: the filesystem is read-only except the persistent uploads dir
+# (avatars) and the runtime socket dir. The release tree itself is read-only.
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=full
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/pave/shared
 
 [Install]
 WantedBy=multi-user.target

@@ -36,7 +36,7 @@ Covered step by step in [Getting Started, Part 3](getting-started.md#part-3---pr
 - [ ] PostgreSQL installed, database and role created
 - [ ] `nginx` installed, site configured
 - [ ] `/srv/pave/` owned by `deploy`
-- [ ] `.env.production` placed at `/srv/pave/.env.production`
+- [ ] `.env.production` placed at `/srv/pave/shared/.env.production`
 - [ ] systemd units installed and enabled (they will fail until first deploy lands)
 - [ ] TLS via certbot
 
