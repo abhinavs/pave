@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.settings import settings
+from app.utils.emails import normalize_email
 
 oauth = OAuth()
 
@@ -48,6 +49,7 @@ async def find_or_create_oauth_user(
     provider: str,
     provider_id: str,
     email: str | None,
+    email_verified: bool,
     name: str,
     avatar_url: str | None,
 ) -> User:
@@ -56,18 +58,22 @@ async def find_or_create_oauth_user(
     Match order: the (provider, provider_id) pair first, then the email. Only
     when neither matches do we create. GitHub may withhold the email, so a
     None email is expected and simply skips the email match.
+
+    A provider email is only trusted when the provider says it is verified.
+    An unverified email is never used to match or seed an account: otherwise
+    an attacker could register a victim's address at the provider (without
+    proving ownership) and get linked onto the victim's existing account.
     """
     by_provider = await db.execute(
-        select(User).where(
-            User.provider == provider, User.provider_id == provider_id
-        )
+        select(User).where(User.provider == provider, User.provider_id == provider_id)
     )
     user = by_provider.scalar_one_or_none()
     if user is not None:
         return user
 
-    if email:
-        by_email = await db.execute(select(User).where(User.email == email))
+    trusted_email = normalize_email(email) if (email and email_verified) else None
+    if trusted_email:
+        by_email = await db.execute(select(User).where(User.email == trusted_email))
         user = by_email.scalar_one_or_none()
         if user is not None:
             # Link the OAuth identity onto the existing account in place.
@@ -83,9 +89,9 @@ async def find_or_create_oauth_user(
 
     user = User(
         name=name,
-        # No provider email: synthesize a stable, unique placeholder so the
+        # No trusted email: synthesize a stable, unique placeholder so the
         # NOT NULL / UNIQUE email column still holds.
-        email=email or f"{provider}-{provider_id}@users.noreply.local",
+        email=trusted_email or f"{provider}-{provider_id}@users.noreply.local",
         provider=provider,
         provider_id=provider_id,
         avatar_url=avatar_url,

@@ -56,13 +56,24 @@ async def send_email(msg: EmailMessage) -> None:
     payload = build_payload(msg)
 
     if not (settings.email_api_url and settings.email_api_key):
-        log.info(
-            "email.console",
-            to=msg.to,
-            subject=msg.subject,
-            message=json.dumps(payload),
-        )
+        if settings.debug:
+            # Dev convenience: print the whole message so verification/reset
+            # links are reachable without a provider.
+            log.info(
+                "email.console",
+                to=msg.to,
+                subject=msg.subject,
+                message=json.dumps(payload),
+            )
+        else:
+            # Never log the body in production: it carries live tokens. Surface
+            # the misconfiguration instead of silently leaking links to logs.
+            log.warning("email.unconfigured", to=msg.to, subject=msg.subject)
         return
+
+    if not settings.debug and not settings.email_api_url.startswith("https://"):
+        # The API key rides in an Authorization header; http would leak it.
+        raise RuntimeError("EMAIL_API_URL must use https in production")
 
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.post(

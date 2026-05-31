@@ -18,8 +18,8 @@
       </p>
     </header>
 
-    {# OAuth above email is the shape reflex_kit uses: most accounts get
-       created via a social provider, so the email form sits underneath. #}
+    {# OAuth sits above the email form: most accounts get created via a
+       social provider, so the email form sits underneath. #}
     {% with verb = "Sign up with" %}
       {% include "auth/_oauth_buttons.html" %}
     {% endwith %}
@@ -27,6 +27,14 @@
     {% with label = "or with email" %}
       {% include "_components/divider.html" %}
     {% endwith %}
+
+    {# Signup errors (invalid email / weak password) land here via a redirect
+       to /auth/signup?error=, mapped to a friendly title in auth.py. #}
+    {% if error %}
+      {% with title = error, variant = "destructive" %}
+        {% include "_components/alert.html" %}
+      {% endwith %}
+    {% endif %}
 
     <form action="/auth/signup" method="post" class="space-y-5">
       {% with name="name", label="Name", required=True, autofocus=True, placeholder="Ada Lovelace" %}

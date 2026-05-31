@@ -90,3 +90,19 @@ async def test_resend_redirects_with_sent_flash(
     resp = await authenticated_client.post("/auth/resend")
     assert resp.status_code in (302, 303)
     assert "sent" in resp.headers["location"]
+
+
+async def test_resend_for_already_verified_user_does_not_claim_sent(
+    async_client: AsyncClient, db_session, verified_user
+) -> None:
+    """A verified user who hits resend should get neutral feedback, not a
+    'verification sent' page implying an email went out (it did not)."""
+    from app.auth.sessions import SESSION_COOKIE, create_session
+
+    token = await create_session(db_session, user_id=verified_user.id)
+    await db_session.commit()
+    async_client.cookies.set(SESSION_COOKIE, token)
+
+    resp = await async_client.post("/auth/resend")
+    assert resp.status_code in (302, 303)
+    assert "sent" not in resp.headers["location"]

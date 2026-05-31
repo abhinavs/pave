@@ -54,17 +54,23 @@ def _mint_token() -> str:
 
 
 def _client_ip(request: Request | None) -> str | None:
-    """Best-effort client IP, honouring X-Forwarded-For if a proxy set it.
+    """Best-effort client IP.
 
-    The proxy is responsible for setting only its own value here; we trust
-    the leftmost entry because that is the one the reverse proxy attests to.
-    None when called outside an HTTP context (tests, scripts)."""
+    Prefer X-Real-IP: Pave's nginx sets it to the actual TCP peer and
+    overwrites any client-sent value, so it cannot be forged. The leftmost
+    X-Forwarded-For entry is client-supplied and spoofable, so it is only a
+    last resort before the direct peer. None outside an HTTP context."""
     if request is None:
         return None
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip() or None
+    if request.client:
+        return request.client.host
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         return forwarded.split(",", 1)[0].strip() or None
-    return request.client.host if request.client else None
+    return None
 
 
 async def create_session(
@@ -96,15 +102,14 @@ async def create_session(
     return token
 
 
-async def resolve_session(
-    db: AsyncSession, token: str
-) -> tuple[Session, User] | None:
+async def resolve_session(db: AsyncSession, token: str) -> tuple[Session, User] | None:
     """Return the (session, user) the cookie token vouches for, or None.
 
     A None answer collapses every failure mode - unknown token, expired,
     revoked, inactive user - into the same outcome the caller treats as
-    anonymous. We touch last_used_at if it is stale enough to matter; the
-    commit is best-effort and never fails the request.
+    anonymous. We touch last_used_at if it is stale enough to matter, in
+    memory only: the request's own transaction persists it, so a read never
+    issues (or can be failed by) its own commit.
     """
     row = await db.execute(
         select(Session).where(Session.token_hash == _hash_token(token))
@@ -121,12 +126,12 @@ async def resolve_session(
     if user is None or not user.is_active:
         return None
 
-    # Touch last_used_at when it has drifted past the interval. Doing this
-    # inline keeps "when did this session last see traffic" honest without
-    # writing on every single request.
+    # Touch last_used_at when it has drifted past the interval. Set it in
+    # memory and let the request's transaction flush it (get_db commits at the
+    # end). Committing here would flush unrelated handler work early, and an
+    # unguarded commit could turn a plain read into a 500.
     if now - _as_utc(session.last_used_at) >= _TOUCH_INTERVAL:
         session.last_used_at = now
-        await db.commit()
 
     return session, user
 
@@ -171,9 +176,7 @@ async def revoke_all_for_user(db: AsyncSession, user_id: uuid.UUID) -> None:
     await db.commit()
 
 
-async def active_sessions(
-    db: AsyncSession, user_id: uuid.UUID
-) -> list[Session]:
+async def active_sessions(db: AsyncSession, user_id: uuid.UUID) -> list[Session]:
     """All non-revoked, non-expired sessions for a user, newest first.
 
     This is what the "your active sessions" page renders. Expired rows are

@@ -34,6 +34,52 @@ async def test_unconfigured_uses_console_and_makes_no_request(
     await send_email(_msg())  # must not raise: console path only
 
 
+async def test_unconfigured_in_production_does_not_log_token_body(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In production the console fallback must not log the message body: it
+    carries verification/reset links with live tokens."""
+    monkeypatch.setattr(email_mod.settings, "email_api_url", None)
+    monkeypatch.setattr(email_mod.settings, "email_api_key", None)
+    monkeypatch.setattr(email_mod.settings, "debug", False)
+
+    calls: list[tuple[str, tuple, dict]] = []
+
+    class _Log:
+        def info(self, *a: object, **k: object) -> None:
+            calls.append(("info", a, k))
+
+        def warning(self, *a: object, **k: object) -> None:
+            calls.append(("warning", a, k))
+
+    monkeypatch.setattr(email_mod, "log", _Log())
+
+    msg = EmailMessage(
+        to="ada@example.com",
+        subject="Reset your password",
+        html="<a href='https://x/auth/reset?token=SECRETTOKEN'>reset</a>",
+        text="https://x/auth/reset?token=SECRETTOKEN",
+    )
+    await send_email(msg)
+
+    for _level, args, kwargs in calls:
+        blob = repr(args) + repr(kwargs)
+        assert "SECRETTOKEN" not in blob, "token leaked into logs in production"
+    assert any(level == "warning" for level, _, _ in calls), "misconfig not surfaced"
+
+
+async def test_http_provider_url_rejected_in_production(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An http endpoint would leak the API key on the wire; refuse it in prod."""
+    monkeypatch.setattr(email_mod.settings, "email_api_url", "http://insecure.example")
+    monkeypatch.setattr(email_mod.settings, "email_api_key", "secret-key")
+    monkeypatch.setattr(email_mod.settings, "debug", False)
+
+    with pytest.raises(RuntimeError, match="https"):
+        await send_email(_msg())
+
+
 async def test_configured_makes_exactly_one_post(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -78,9 +124,7 @@ async def test_configured_raises_on_provider_error(
     )
     monkeypatch.setattr(email_mod.settings, "email_api_key", "secret-key")
 
-    transport = httpx.MockTransport(
-        lambda request: httpx.Response(500, text="boom")
-    )
+    transport = httpx.MockTransport(lambda request: httpx.Response(500, text="boom"))
     real_client = email_mod.httpx.AsyncClient
     monkeypatch.setattr(
         email_mod.httpx,

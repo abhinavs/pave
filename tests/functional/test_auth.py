@@ -16,6 +16,78 @@ SESSION_COOKIE = "session"
 # --- signup / login / logout ------------------------------------------------
 
 
+async def test_signup_verify_link_uses_canonical_base_url(
+    async_client: AsyncClient, monkeypatch
+) -> None:
+    """A configured base_url wins over the (spoofable) request Host, so the
+    verification link can never be pointed at an attacker's domain."""
+    import app.routers.auth as auth_mod
+
+    monkeypatch.setattr(auth_mod.settings, "base_url", "https://pave.example")
+    captured: dict[str, object] = {}
+
+    async def _capture(target: object, **kwargs: object) -> str:
+        captured.update(kwargs)
+        return "job-id"
+
+    monkeypatch.setattr(auth_mod.soniq, "enqueue", _capture)
+
+    resp = await async_client.post(
+        "/auth/signup",
+        data={"name": "Eve", "email": "eve@example.com", "password": "hunter2hunter2"},
+        headers={"Host": "evil.com"},
+    )
+    assert resp.status_code in (302, 303)
+    assert captured["verify_base_url"] == "https://pave.example"
+
+
+async def test_signup_normalizes_email(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Email is canonicalized (lowercase + trim) so case/whitespace variants
+    cannot create separate accounts."""
+    await async_client.post(
+        "/auth/signup",
+        data={
+            "name": "Mixed",
+            "email": "  Mixed@Example.COM ",
+            "password": "hunter2hunter2",
+        },
+    )
+    rows = await db_session.execute(select(User).where(User.name == "Mixed"))
+    user = rows.scalar_one()
+    assert user.email == "mixed@example.com"
+
+
+async def test_login_is_case_insensitive_on_email(
+    async_client: AsyncClient, test_user: User
+) -> None:
+    # test_user.email is ada@example.com; a differently-cased login must work.
+    resp = await async_client.post(
+        "/auth/login",
+        data={"email": "ADA@Example.com", "password": "correct horse"},
+    )
+    assert resp.status_code in (302, 303)
+    assert SESSION_COOKIE in resp.cookies
+
+
+async def test_signup_duplicate_email_case_insensitive(
+    async_client: AsyncClient, test_user: User, db_session: AsyncSession
+) -> None:
+    resp = await async_client.post(
+        "/auth/signup",
+        data={
+            "name": "Imposter",
+            "email": "ADA@EXAMPLE.COM",  # same as test_user once normalized
+            "password": "hunter2hunter2",
+        },
+        follow_redirects=False,
+    )
+    assert resp.headers["location"] == "/auth/login?error=exists"
+    rows = await db_session.execute(select(User).where(User.email == "ada@example.com"))
+    assert len(rows.scalars().all()) == 1
+
+
 async def test_signup_creates_user_and_sets_cookie(
     async_client: AsyncClient, db_session: AsyncSession
 ) -> None:
@@ -26,13 +98,67 @@ async def test_signup_creates_user_and_sets_cookie(
     assert resp.status_code in (302, 303)
     assert SESSION_COOKIE in resp.cookies
 
-    row = await db_session.execute(
-        select(User).where(User.email == "new@example.com")
-    )
+    row = await db_session.execute(select(User).where(User.email == "new@example.com"))
     user = row.scalar_one()
     assert user.name == "New"
     assert user.password_hash != "hunter2hunter2"  # stored hashed
     assert user.email_verified_at is None  # signup does not verify
+
+
+async def test_signup_rejects_short_password(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Server-side password policy: a sub-8-char password is refused even if
+    the client-side minlength is bypassed. No user, no session."""
+    resp = await async_client.post(
+        "/auth/signup",
+        data={"name": "Short", "email": "short@example.com", "password": "abc"},
+        follow_redirects=False,
+    )
+    assert resp.status_code in (302, 303)
+    assert "error=invalid" in resp.headers["location"]
+    assert SESSION_COOKIE not in resp.cookies
+
+    row = await db_session.execute(
+        select(User).where(User.email == "short@example.com")
+    )
+    assert row.scalar_one_or_none() is None
+
+
+async def test_signup_rejects_invalid_email(
+    async_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    resp = await async_client.post(
+        "/auth/signup",
+        data={"name": "Bad", "email": "not-an-email", "password": "hunter2hunter2"},
+        follow_redirects=False,
+    )
+    assert resp.status_code in (302, 303)
+    assert "error=invalid" in resp.headers["location"]
+
+    row = await db_session.execute(select(User).where(User.email == "not-an-email"))
+    assert row.scalar_one_or_none() is None
+
+
+async def test_signup_duplicate_email_does_not_500(
+    async_client: AsyncClient, test_user: User, db_session: AsyncSession
+) -> None:
+    """A duplicate email (incl. the concurrent-signup race) hits the unique
+    index and must redirect to login?error=exists, not raise a 500."""
+    resp = await async_client.post(
+        "/auth/signup",
+        data={
+            "name": "Imposter",
+            "email": "ada@example.com",  # already taken by test_user
+            "password": "hunter2hunter2",
+        },
+        follow_redirects=False,
+    )
+    assert resp.status_code in (302, 303)
+    assert resp.headers["location"] == "/auth/login?error=exists"
+
+    rows = await db_session.execute(select(User).where(User.email == "ada@example.com"))
+    assert len(rows.scalars().all()) == 1  # no second row created
 
 
 async def test_login_sets_cookie_and_redirects(
@@ -56,9 +182,7 @@ async def test_login_rejects_bad_password(
     assert SESSION_COOKIE not in resp.cookies
 
 
-async def test_logout_clears_cookie(
-    async_client: AsyncClient, test_user: User
-) -> None:
+async def test_logout_clears_cookie(async_client: AsyncClient, test_user: User) -> None:
     await async_client.post(
         "/auth/login",
         data={"email": "ada@example.com", "password": "correct horse"},
@@ -86,8 +210,8 @@ async def test_signup_page_renders_a_form(async_client: AsyncClient) -> None:
 async def test_signup_page_shows_oauth_and_sign_in_link(
     async_client: AsyncClient,
 ) -> None:
-    # Reflex-kit shape: OAuth above a divider above the email form, with a
-    # cross-link back to login in the header.
+    # OAuth above a divider above the email form, with a cross-link back to
+    # login in the header.
     body = (await async_client.get("/auth/signup")).text
     assert 'href="/auth/google"' in body
     assert 'href="/auth/github"' in body
@@ -204,6 +328,36 @@ async def test_require_user_allows_authenticated(
     assert resp.json()["email"] == "ada@example.com"
 
 
+# --- OAuth start ------------------------------------------------------------
+
+
+async def test_oauth_start_forces_https_callback_in_production(
+    async_client: AsyncClient, monkeypatch
+) -> None:
+    """Behind a TLS-terminating proxy the request scheme is http, so url_for
+    would build an http callback the provider rejects. In production the
+    callback must be https."""
+    import app.routers.auth as auth_mod
+
+    monkeypatch.setattr(auth_mod.settings, "debug", False)
+
+    captured: dict[str, str] = {}
+
+    class _FakeClient:
+        async def authorize_redirect(self, request: object, redirect_uri: str):
+            captured["redirect_uri"] = str(redirect_uri)
+            from starlette.responses import Response
+
+            return Response(status_code=302)
+
+    monkeypatch.setattr(auth_mod.oauth, "create_client", lambda provider: _FakeClient())
+
+    resp = await async_client.get("/auth/google", follow_redirects=False)
+    assert resp.status_code == 302
+    assert captured["redirect_uri"].startswith("https://")
+    assert captured["redirect_uri"].endswith("/auth/google/callback")
+
+
 # --- OAuth find-or-create ---------------------------------------------------
 
 
@@ -215,14 +369,13 @@ async def test_oauth_find_or_create_no_duplicate_by_email(
         provider="google",
         provider_id="g-123",
         email="ada@example.com",
+        email_verified=True,
         name="Ada G",
         avatar_url=None,
     )
     assert user.id == test_user.id  # linked existing, no duplicate
 
-    rows = await db_session.execute(
-        select(User).where(User.email == "ada@example.com")
-    )
+    rows = await db_session.execute(select(User).where(User.email == "ada@example.com"))
     assert len(rows.scalars().all()) == 1
 
 
@@ -234,11 +387,34 @@ async def test_oauth_creates_user_when_absent(
         provider="github",
         provider_id="gh-9",
         email="octo@example.com",
+        email_verified=True,
         name="Octo",
         avatar_url="http://img/x.png",
     )
     assert user.id is not None
     assert user.provider == "github"
+
+
+async def test_oauth_unverified_email_does_not_link_existing_account(
+    db_session: AsyncSession, test_user: User
+) -> None:
+    """An attacker who registers the victim's email at a provider WITHOUT
+    verifying it must not be linked onto the victim's existing account."""
+    user = await find_or_create_oauth_user(
+        db_session,
+        provider="google",
+        provider_id="attacker-1",
+        email="ada@example.com",  # same as test_user, but unverified at provider
+        email_verified=False,
+        name="Not Ada",
+        avatar_url=None,
+    )
+    assert user.id != test_user.id  # did NOT hijack the existing account
+
+    await db_session.refresh(test_user)
+    assert test_user.provider is None  # victim account untouched
+    # The new account got a placeholder email, not the victim's address.
+    assert user.email != "ada@example.com"
 
 
 # --- email verification -----------------------------------------------------

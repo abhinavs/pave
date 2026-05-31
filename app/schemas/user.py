@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.utils.prefixed_id import PrefixedUUID
 
@@ -13,11 +13,15 @@ type UserID = Annotated[uuid.UUID, PrefixedUUID("user")]
 
 
 class UserSignup(BaseModel):
-    """What the signup form sends. Email is validated, password is raw here."""
+    """What the signup form sends. Email is validated, password is raw here.
 
-    name: str
+    The 8-char minimum mirrors the client-side minlength on the form so the
+    rule is actually enforced server-side, not just suggested in the browser.
+    """
+
+    name: str = Field(min_length=1)
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8)
 
 
 class UserLogin(BaseModel):

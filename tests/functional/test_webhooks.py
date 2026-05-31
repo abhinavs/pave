@@ -1,4 +1,4 @@
-"""Phase 4: webhook ingestion + the Soniq processing job.
+"""Webhook ingestion + the Soniq processing job.
 
 The endpoint accepts an arbitrary JSON payload at `/webhooks/{slug}`, records
 it, and hands the id (not the ORM object) to a Soniq job. Soniq's `enqueue`
@@ -86,8 +86,81 @@ async def test_post_webhook_enqueues_job_with_event_id(
 
     assert len(fake_enqueue.calls) == 1
     _target, kwargs = fake_enqueue.calls[0]
-    # AGENTS.md: enqueue receives a primitive id, never the ORM object.
+    # enqueue receives a primitive id, never the ORM object.
     assert kwargs == {"event_id": str(event.id)}
+
+
+async def test_webhook_rejects_bad_signature_when_secret_set(
+    async_client: AsyncClient, fake_enqueue: _EnqueueRecorder, monkeypatch
+) -> None:
+    """With WEBHOOK_SECRET configured, an unsigned or wrongly-signed request
+    is rejected so the endpoint cannot be flooded or used to inject rows."""
+    import app.routers.webhooks as wh
+
+    monkeypatch.setattr(wh.settings, "webhook_secret", "topsecret")
+
+    resp = await async_client.post("/webhooks/stripe", json={"x": 1})
+    assert resp.status_code == 401
+
+    bad = await async_client.post(
+        "/webhooks/stripe",
+        json={"x": 1},
+        headers={"X-Webhook-Signature": "deadbeef"},
+    )
+    assert bad.status_code == 401
+    assert fake_enqueue.calls == []
+
+
+async def test_webhook_accepts_valid_signature(
+    async_client: AsyncClient, fake_enqueue: _EnqueueRecorder, monkeypatch
+) -> None:
+    import hashlib
+    import hmac
+
+    import app.routers.webhooks as wh
+
+    monkeypatch.setattr(wh.settings, "webhook_secret", "topsecret")
+
+    body = b'{"type":"charge.succeeded"}'
+    sig = hmac.new(b"topsecret", body, hashlib.sha256).hexdigest()
+    resp = await async_client.post(
+        "/webhooks/stripe",
+        content=body,
+        headers={
+            "X-Webhook-Signature": sig,
+            "Content-Type": "application/json",
+        },
+    )
+    assert resp.status_code == 202
+    assert len(fake_enqueue.calls) == 1
+
+
+async def test_webhook_rejects_oversized_payload(
+    async_client: AsyncClient, fake_enqueue: _EnqueueRecorder
+) -> None:
+    huge = b'{"x":"' + b"a" * (2 * 1024 * 1024) + b'"}'
+    resp = await async_client.post(
+        "/webhooks/stripe",
+        content=huge,
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 413
+    assert fake_enqueue.calls == []
+
+
+async def test_webhook_unconfigured_is_rejected_in_production(
+    async_client: AsyncClient, fake_enqueue: _EnqueueRecorder, monkeypatch
+) -> None:
+    """No secret + not debug = closed. An open ingestion endpoint in prod is a
+    DoS/injection hole, so it must fail loudly until WEBHOOK_SECRET is set."""
+    import app.routers.webhooks as wh
+
+    monkeypatch.setattr(wh.settings, "webhook_secret", None)
+    monkeypatch.setattr(wh.settings, "debug", False)
+
+    resp = await async_client.post("/webhooks/stripe", json={"x": 1})
+    assert resp.status_code == 503
+    assert fake_enqueue.calls == []
 
 
 async def test_process_payload_idempotent_on_missing_record(

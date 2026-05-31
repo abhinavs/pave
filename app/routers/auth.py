@@ -9,11 +9,13 @@ override.
 """
 
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Form, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import (
@@ -21,7 +23,7 @@ from app.auth.dependencies import (
     get_current_user,
     require_user,
 )
-from app.auth.oauth import oauth
+from app.auth.oauth import find_or_create_oauth_user, oauth
 from app.auth.password import hash_password, verify_password
 from app.auth.sessions import (
     DEFAULT_MAX_AGE,
@@ -44,9 +46,10 @@ from app.jobs import send_verification_email, soniq
 from app.middleware import limiter
 from app.models.session import Session
 from app.models.user import User
-from app.schemas.user import PasswordReset, UserMe
+from app.schemas.user import PasswordReset, UserMe, UserSignup
 from app.settings import settings
 from app.templating import templates
+from app.utils.emails import normalize_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -72,10 +75,20 @@ def _redirect(to: str) -> RedirectResponse:
     return RedirectResponse(to, status_code=status.HTTP_303_SEE_OTHER)
 
 
+def _base_url(request: Request) -> str:
+    """The canonical public origin for outbound links. Prefer the configured
+    base_url so a spoofed Host header cannot point verification or reset links
+    at an attacker's domain; fall back to the request origin in dev where
+    base_url is unset."""
+    if settings.base_url:
+        return settings.base_url.rstrip("/")
+    return str(request.base_url).rstrip("/")
+
+
 def _absolute(request: Request, path: str) -> str:
-    """Build an absolute link from the incoming request's host. Email links
-    must be clickable from an inbox, so they cannot be relative."""
-    return f"{str(request.base_url).rstrip('/')}{path}"
+    """Build an absolute link for an email. Email links must be clickable from
+    an inbox, so they cannot be relative."""
+    return f"{_base_url(request)}{path}"
 
 
 # --- auth pages (HTML) -----------------------------------------------------
@@ -89,15 +102,24 @@ _LOGIN_ERRORS = {
     "exists": "That email is already registered. Log in instead.",
 }
 
+_SIGNUP_ERRORS = {
+    "invalid": "Enter a valid email and a password of at least 8 characters.",
+}
+
 
 @router.get("/signup", response_class=HTMLResponse)
 async def signup_page(
     request: Request,
+    error: str | None = None,
     user: User | None = Depends(get_current_user),
 ) -> Response:
     if user is not None:
         return _redirect("/")
-    return templates.TemplateResponse(request, "auth/signup.html", {"user": None})
+    return templates.TemplateResponse(
+        request,
+        "auth/signup.html",
+        {"user": None, "error": _SIGNUP_ERRORS.get(error or "")},
+    )
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -135,8 +157,8 @@ async def reset_page(request: Request, token: str) -> Response:
 @router.get("/confirm", response_class=HTMLResponse)
 async def confirm_page(request: Request, token: str) -> Response:
     """Email confirmation landing. POSTs to /auth/verify with the token in
-    the body. The legacy GET /auth/verify?token=... still works for direct
-    clicks from an inbox; this page is the click-through alternative."""
+    the body. GET /auth/verify?token=... also works for direct clicks from an
+    inbox; this page is the click-through alternative."""
     return templates.TemplateResponse(
         request, "auth/confirm.html", {"user": None, "token": token}
     )
@@ -146,6 +168,7 @@ async def confirm_page(request: Request, token: str) -> Response:
 
 
 @router.post("/signup")
+@limiter.limit("5/minute")
 async def signup(
     request: Request,
     name: str = Form(...),
@@ -153,13 +176,28 @@ async def signup(
     password: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    existing = await db.execute(select(User).where(User.email == email))
-    if existing.scalar_one_or_none() is not None:
-        return _redirect("/auth/login?error=exists")
+    # Validate through the schema so the email is well-formed and the password
+    # meets the policy before we touch the database.
+    try:
+        data = UserSignup(name=name, email=email, password=password)
+    except ValidationError:
+        return _redirect("/auth/signup?error=invalid")
 
-    user = User(name=name, email=email, password_hash=hash_password(password))
+    user = User(
+        name=data.name,
+        email=normalize_email(data.email),
+        password_hash=hash_password(data.password),
+    )
     db.add(user)
-    await db.flush()  # user.id assigned, but the row is not committed yet
+    try:
+        # flush emits the INSERT, which assigns user.id and is where the
+        # unique index on email rejects a duplicate. The unique index is the
+        # real guard: a plain duplicate and the concurrent-signup race both
+        # land here. Roll back and send them to login rather than 500.
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        return _redirect("/auth/login?error=exists")
 
     response = _redirect("/")
     await _set_session(response, db, user, request)
@@ -170,7 +208,7 @@ async def signup(
     await soniq.enqueue(
         send_verification_email,
         user_id=str(user.id),
-        verify_base_url=str(request.base_url).rstrip("/"),
+        verify_base_url=_base_url(request),
     )
     return response
 
@@ -183,7 +221,7 @@ async def login(
     password: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    row = await db.execute(select(User).where(User.email == email))
+    row = await db.execute(select(User).where(User.email == normalize_email(email)))
     user = row.scalar_one_or_none()
     if user is None or not verify_password(password, user.password_hash):
         return _redirect("/auth/login?error=invalid")
@@ -301,8 +339,6 @@ async def _verify_token(token: str, db: AsyncSession) -> Response:
         return _redirect("/auth/login?error=verify")
 
     if user.email_verified_at is None:
-        from datetime import UTC, datetime
-
         user.email_verified_at = datetime.now(UTC)
         await db.commit()
 
@@ -356,17 +392,18 @@ async def resend_verification(
     user: User | None = Depends(get_current_user),
 ) -> Response:
     """Re-send the verification email. Rate limited so an account cannot
-    be used to spam an inbox. No-op (silently) if the user is already
-    verified - we redirect either way so the response shape does not
-    leak which case happened."""
+    be used to spam an inbox."""
     if user is None:
         return _redirect("/auth/login")
-    if user.email_verified_at is None:
-        await soniq.enqueue(
-            send_verification_email,
-            user_id=str(user.id),
-            verify_base_url=str(request.base_url).rstrip("/"),
-        )
+    if user.email_verified_at is not None:
+        # Already verified: nothing to send. Send them home with neutral
+        # feedback rather than a misleading "verification sent" page.
+        return _redirect("/?status=already-verified")
+    await soniq.enqueue(
+        send_verification_email,
+        user_id=str(user.id),
+        verify_base_url=_base_url(request),
+    )
     return _redirect("/auth/verify-needed?status=sent")
 
 
@@ -380,7 +417,7 @@ async def forgot(
     email: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    row = await db.execute(select(User).where(User.email == email))
+    row = await db.execute(select(User).where(User.email == normalize_email(email)))
     user = row.scalar_one_or_none()
     if user is not None and user.password_hash:
         # Send only when the account exists. The redirect below is identical
@@ -407,12 +444,9 @@ async def reset(
 ) -> Response:
     # A failed reset returns 400 rather than a redirect: nothing was mutated,
     # and the client (form or API) needs to see the failure, not a 303 to a
-    # page that would silently look successful. Phase 3 swaps this for a 200
-    # form partial with inline errors.
+    # page that would silently look successful.
     try:
-        PasswordReset(
-            token=token, password=password, confirm_password=confirm_password
-        )
+        PasswordReset(token=token, password=password, confirm_password=confirm_password)
     except ValidationError:
         return Response("passwords do not match", status_code=400)
 
@@ -453,9 +487,11 @@ async def oauth_start(provider: str, request: Request) -> Response:
     if client is None:
         return Response(status_code=404)
     redirect_uri = request.url_for("oauth_callback", provider=provider)
-    redirect: Response = await client.authorize_redirect(
-        request, str(redirect_uri)
-    )
+    if not settings.debug:
+        # Behind TLS-terminating nginx the request scheme is http, so url_for
+        # builds an http callback the provider rejects. Force https in prod.
+        redirect_uri = redirect_uri.replace(scheme="https")
+    redirect: Response = await client.authorize_redirect(request, str(redirect_uri))
     return redirect
 
 
@@ -465,8 +501,6 @@ async def oauth_callback(
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    from app.auth.oauth import find_or_create_oauth_user
-
     client = oauth.create_client(provider)
     if client is None:
         return Response(status_code=404)
@@ -475,19 +509,23 @@ async def oauth_callback(
     if provider == "google":
         info = token.get("userinfo") or await client.userinfo(token=token)
         sub, email = info["sub"], info.get("email")
+        email_verified = bool(info.get("email_verified"))
         name = info.get("name") or email or sub
         avatar = info.get("picture")
     else:
         profile = (await client.get("user", token=token)).json()
         sub = str(profile["id"])
-        email = profile.get("email")
-        if not email:
-            emails = (await client.get("user/emails", token=token)).json()
-            primary = next(
-                (e for e in emails if e.get("primary") and e.get("verified")),
-                None,
-            )
-            email = primary["email"] if primary else None
+        # The public profile email is not guaranteed to be verified, so
+        # resolve verification from the emails endpoint's primary entry.
+        emails = (await client.get("user/emails", token=token)).json()
+        primary = next(
+            (e for e in emails if e.get("primary") and e.get("verified")),
+            None,
+        )
+        if primary:
+            email, email_verified = primary["email"], True
+        else:
+            email, email_verified = profile.get("email"), False
         name = profile.get("name") or profile.get("login") or sub
         avatar = profile.get("avatar_url")
 
@@ -496,6 +534,7 @@ async def oauth_callback(
         provider=provider,
         provider_id=sub,
         email=email,
+        email_verified=email_verified,
         name=name,
         avatar_url=avatar,
     )
