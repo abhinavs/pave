@@ -120,9 +120,7 @@ def _normalise(raw: bytes, max_bytes: int) -> bytes:
     if len(raw) == 0:
         raise AvatarError("empty file")
     if len(raw) > max_bytes:
-        raise AvatarError(
-            f"image too large (max {max_bytes // 1024} KiB)"
-        )
+        raise AvatarError(f"image too large (max {max_bytes // 1024} KiB)")
 
     try:
         # `verify` consumes the stream, so we open twice - once to verify
@@ -170,7 +168,7 @@ def _is_local_avatar(url: str | None, storage: LocalAvatarStorage) -> bool:
 def _key_from_url(url: str, storage: LocalAvatarStorage) -> str:
     """Inverse of `url_for`: pull the key out of a stored avatar URL."""
     prefix = storage.url_for("").rstrip("/") + "/"
-    return url[len(prefix):]
+    return url[len(prefix) :]
 
 
 async def replace_for_user(
@@ -180,31 +178,42 @@ async def replace_for_user(
     storage: AvatarStorage | None = None,
     max_bytes: int | None = None,
 ) -> str:
-    """Process `raw`, write the new file, evict the previous one if it
-    was a local upload, mutate `user.avatar_url` in place, return the URL.
+    """Process `raw`, write the new file, mutate `user.avatar_url` in place,
+    return the URL. The previous file is NOT deleted here.
 
-    The caller is responsible for committing the session - this function
-    treats the file system as the side effect it has to make durable, and
-    leaves the database for the route handler to flush."""
+    The caller commits the session, then calls `prune_previous_avatar` with the
+    old URL. Deleting before the commit would leave the database pointing at a
+    file that is already gone if the commit fails; deferring it means a failed
+    commit at worst orphans the new file, never dangles the pointer."""
     storage = storage or LocalAvatarStorage()
     max_bytes = max_bytes if max_bytes is not None else settings.avatar_max_bytes
     processed = _normalise(raw, max_bytes=max_bytes)
     key = _key_for(user.id, processed)
     await storage.write(key, processed)
     new_url = storage.url_for(key)
-    # Best-effort cleanup of the previous file. If it was an OAuth URL,
-    # leave it alone; if it was a local file with the same key (a
-    # re-upload of the exact same bytes), skip the delete too.
-    old = user.avatar_url
-    if (
-        isinstance(storage, LocalAvatarStorage)
-        and _is_local_avatar(old, storage)
-        and old != new_url
-    ):
-        assert old is not None  # narrowed by _is_local_avatar
-        await storage.delete(_key_from_url(old, storage))
     user.avatar_url = new_url
     return new_url
+
+
+async def prune_previous_avatar(
+    old_url: str | None,
+    *,
+    keep: str | None,
+    storage: AvatarStorage | None = None,
+) -> None:
+    """Delete a superseded local avatar file, after the DB commit.
+
+    Best-effort and safe to call unconditionally: an external (OAuth) URL is
+    left alone, and the currently-live file (`keep`, e.g. a re-upload of the
+    same bytes) is never removed."""
+    storage = storage or LocalAvatarStorage()
+    if (
+        isinstance(storage, LocalAvatarStorage)
+        and _is_local_avatar(old_url, storage)
+        and old_url != keep
+    ):
+        assert old_url is not None  # narrowed by _is_local_avatar
+        await storage.delete(_key_from_url(old_url, storage))
 
 
 async def remove_for_user(

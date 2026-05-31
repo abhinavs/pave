@@ -15,6 +15,7 @@ from app.services.avatar import (
     AvatarError,
     LocalAvatarStorage,
     _normalise,
+    prune_previous_avatar,
     remove_for_user,
     replace_for_user,
 )
@@ -99,26 +100,65 @@ async def test_replace_for_user_writes_file_and_sets_url(tmp_path: Path) -> None
     assert on_disk[0].name in url
 
 
-async def test_replace_for_user_evicts_previous_local_file(tmp_path: Path) -> None:
+async def test_replace_for_user_does_not_delete_old_file(tmp_path: Path) -> None:
+    """replace_for_user must NOT delete the previous file: if the caller's
+    commit then fails, the rolled-back avatar_url would point at a file that
+    was already gone. Deletion is deferred to prune_previous_avatar, post-commit."""
     storage = LocalAvatarStorage(tmp_path)
     user = _StubUser()
 
-    # Upload twice with different bytes so the hash, and thus the
-    # filename, changes between the two.
     await replace_for_user(
-        user, _png_bytes(300, 300, color=(10, 20, 30)),
-        storage=storage, max_bytes=10_000_000,
+        user,
+        _png_bytes(300, 300, color=(10, 20, 30)),
+        storage=storage,
+        max_bytes=10_000_000,
     )
     first_file = next(tmp_path.glob("*.png"))
 
     await replace_for_user(
-        user, _png_bytes(300, 300, color=(200, 100, 50)),
-        storage=storage, max_bytes=10_000_000,
+        user,
+        _png_bytes(300, 300, color=(200, 100, 50)),
+        storage=storage,
+        max_bytes=10_000_000,
     )
 
+    # Both files still on disk: the old one survives until prune runs.
+    assert len(list(tmp_path.glob("*.png"))) == 2
+    assert first_file.exists()
+
+
+async def test_prune_previous_avatar_evicts_old_local_file(tmp_path: Path) -> None:
+    storage = LocalAvatarStorage(tmp_path)
+    user = _StubUser()
+
+    old_url = await replace_for_user(
+        user,
+        _png_bytes(300, 300, color=(10, 20, 30)),
+        storage=storage,
+        max_bytes=10_000_000,
+    )
+    first_file = next(tmp_path.glob("*.png"))
+    new_url = await replace_for_user(
+        user,
+        _png_bytes(300, 300, color=(200, 100, 50)),
+        storage=storage,
+        max_bytes=10_000_000,
+    )
+
+    # Post-commit cleanup removes only the old file, keeping the live one.
+    await prune_previous_avatar(old_url, keep=new_url, storage=storage)
+
     files = list(tmp_path.glob("*.png"))
-    assert len(files) == 1  # the old one was deleted
+    assert len(files) == 1
     assert not first_file.exists()
+
+
+async def test_prune_previous_avatar_leaves_oauth_url_alone(tmp_path: Path) -> None:
+    storage = LocalAvatarStorage(tmp_path)
+    # An external CDN url is not ours to delete; prune must no-op without error.
+    await prune_previous_avatar(
+        "https://lh3.googleusercontent.com/a/x", keep=None, storage=storage
+    )
 
 
 async def test_replace_for_user_leaves_oauth_url_alone(tmp_path: Path) -> None:
@@ -128,7 +168,10 @@ async def test_replace_for_user_leaves_oauth_url_alone(tmp_path: Path) -> None:
     user = _StubUser(avatar_url="https://lh3.googleusercontent.com/a/x")
 
     await replace_for_user(
-        user, _png_bytes(64, 64), storage=storage, max_bytes=10_000_000,
+        user,
+        _png_bytes(64, 64),
+        storage=storage,
+        max_bytes=10_000_000,
     )
 
     # No exception was raised trying to delete the external URL.
@@ -140,7 +183,10 @@ async def test_remove_for_user_clears_field_and_local_file(tmp_path: Path) -> No
     storage = LocalAvatarStorage(tmp_path)
     user = _StubUser()
     await replace_for_user(
-        user, _png_bytes(64, 64), storage=storage, max_bytes=10_000_000,
+        user,
+        _png_bytes(64, 64),
+        storage=storage,
+        max_bytes=10_000_000,
     )
     assert list(tmp_path.glob("*.png"))
 

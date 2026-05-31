@@ -13,7 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import require_user
 from app.database import get_db
 from app.models.user import User
-from app.services.avatar import AvatarError, remove_for_user, replace_for_user
+from app.services.avatar import (
+    AvatarError,
+    prune_previous_avatar,
+    remove_for_user,
+    replace_for_user,
+)
 from app.templating import templates
 
 router = APIRouter(prefix="/account", tags=["account"])
@@ -40,8 +45,9 @@ async def avatar_upload(
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     raw = await file.read()
+    old_url = user.avatar_url
     try:
-        await replace_for_user(user, raw)
+        new_url = await replace_for_user(user, raw)
     except AvatarError as exc:
         # Round-trip the message through the query string. Avatars are a
         # forgiving surface - "too large", "unsupported format" - and the
@@ -51,6 +57,9 @@ async def avatar_upload(
             status_code=status.HTTP_303_SEE_OTHER,
         )
     await db.commit()
+    # Only after the new URL is committed do we delete the old file, so a
+    # failed commit can never leave the row pointing at a deleted avatar.
+    await prune_previous_avatar(old_url, keep=new_url)
     return RedirectResponse(
         "/account?status=avatar-updated",
         status_code=status.HTTP_303_SEE_OTHER,
