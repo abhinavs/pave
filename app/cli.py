@@ -98,6 +98,33 @@ def migrate() -> None:
     _run("alembic", "upgrade", "head")
 
 
+@cli.command("check-migrations")
+def check_migrations() -> None:
+    """Verify the migration chain applies cleanly, without mutating any real db.
+
+    The deploy gate must never run `alembic upgrade` against the operator's
+    configured DATABASE_URL. This applies every migration to a throwaway
+    SQLite database in a temp dir, then discards it, so a broken migration is
+    caught before deploy with no side effects.
+    """
+    import os
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        db_path = Path(tmp) / "migration-check.db"
+        env = {
+            **os.environ,
+            # USE_SQLITE=false so _build_url passes the sqlite URL through as-is.
+            "USE_SQLITE": "false",
+            "DATABASE_URL": f"sqlite+aiosqlite:///{db_path}",
+        }
+        result = subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"], env=env
+        )
+        if result.returncode != 0:
+            raise typer.Exit(code=result.returncode)
+
+
 @cli.command()
 def migration(message: str = typer.Option(..., "--message", "-m")) -> None:
     """Autogenerate a migration. Review the generated file before `pave migrate`."""
@@ -108,6 +135,46 @@ def migration(message: str = typer.Option(..., "--message", "-m")) -> None:
 def downgrade(step: str = "-1") -> None:
     """Roll a migration back (default one step) to test the downgrade."""
     _run("alembic", "downgrade", step)
+
+
+@cli.command("check-env")
+def check_env(env_file: str = ".env") -> None:
+    """Verify every variable marked `required` in .env.schema is actually set.
+
+    .env.schema is the contract; this is what makes it more than a comment.
+    Reads the schema, then checks the process environment plus the given env
+    file, and exits non-zero listing anything missing, so a deploy or CI step
+    can gate on it.
+    """
+    import os
+
+    def _keys(path: Path) -> list[tuple[str, str]]:
+        pairs: list[tuple[str, str]] = []
+        for raw in path.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            pairs.append((key.strip(), value.strip()))
+        return pairs
+
+    schema = Path(".env.schema")
+    if not schema.exists():
+        typer.echo("check-env: .env.schema not found")
+        raise typer.Exit(code=1)
+
+    present = dict(os.environ)
+    env_path = Path(env_file)
+    if env_path.exists():
+        for key, value in _keys(env_path):
+            present.setdefault(key, value)
+
+    required = [key for key, spec in _keys(schema) if spec == "required"]
+    missing = [key for key in required if not present.get(key)]
+    if missing:
+        typer.echo(f"check-env: missing required variables: {', '.join(missing)}")
+        raise typer.Exit(code=1)
+    typer.echo("check-env: all required variables are set")
 
 
 @cli.command()
