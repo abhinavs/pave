@@ -1,0 +1,43 @@
+# systemd unit for the Pave API. Copy to /etc/systemd/system/pave-api.service,
+# then `sudo systemctl enable --now pave-api`. fab deploy restarts this after
+# flipping the `current` symlink.
+#
+# Gunicorn is the process manager, Uvicorn the worker class: Gunicorn handles
+# graceful reload and worker supervision, Uvicorn runs the ASGI app.
+
+[Unit]
+Description=Pave API (Gunicorn + Uvicorn workers)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=notify
+User=deploy
+Group=deploy
+WorkingDirectory=/srv/pave/current
+EnvironmentFile=/srv/pave/current/.env.production
+
+# RuntimeDirectory creates and owns /run/pave for the Unix socket nginx
+# proxies to. It is recreated on every start, so no stale socket survives.
+RuntimeDirectory=pave
+RuntimeDirectoryMode=0750
+
+ExecStart=/srv/pave/current/.venv/bin/gunicorn app.main:app \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --workers 3 \
+    --bind unix:/run/pave/pave.sock \
+    --access-logfile - \
+    --error-logfile -
+
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+Restart=always
+RestartSec=3
+
+# Hardening: the app needs nothing outside its release dir and /run/pave.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

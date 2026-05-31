@@ -1,0 +1,31 @@
+# {{ app_name }}
+
+> A production FastAPI starter wired end to end: async SQLAlchemy 2.0,
+> server-rendered HTMX, email and OAuth login on a revocable session store,
+> Soniq background jobs, ruff and strict mypy on the deploy gate, and one
+> Fabric command that ships to a real Linux host over SSH.
+
+This file is generated for large language models that read sites to help users.
+It points at the canonical, prose-bearing URLs - the marketing pages, the blog,
+and the few JSON endpoints worth knowing about - and skips the auth flow,
+HTMX partials, and asset routes that would only add noise to a summary.
+
+## Pages
+
+- [Home]({{ base }}/): what {{ app_name }} is, why these picks, the feature grid.
+- [Components]({{ base }}/components): the design system gallery - tokens, buttons, inputs, badges.
+{%- for p in pages %}
+- [{{ p.title }}]({{ base }}/{{ p.slug }}){% if p.description %}: {{ p.description }}{% endif %}.
+{%- endfor %}
+
+## Blog
+
+- [Index]({{ base }}/blog): all posts, newest first.
+{%- for post in posts %}
+- [{{ post.title }}]({{ base }}/blog/{{ post.slug }}){% if post.description %}: {{ post.description }}{% endif %}.
+{%- endfor %}
+
+## Machine-readable
+
+- [Sitemap]({{ base }}/sitemap.xml): every public URL in XML.
+- [Health]({{ base }}/health): JSON liveness probe with version and database status.

@@ -1,0 +1,41 @@
+{# Tabs. A horizontal nav with one active item and the rest muted.
+   Two modes:
+
+   * "link"  - each tab is an <a> pointing at a URL (default). Use this
+               when each tab is a separate route, which is by far the
+               more common Pave shape.
+   * "alpine" - Alpine-driven panel switching. The caller is responsible
+                for the panels; this partial only renders the bar.
+
+   Context variables:
+     items       - list of {"label": ..., "href" or "value": ...}; for link
+                   mode each item also needs "active": True on one entry.
+     mode        - "link" (default) | "alpine"
+     alpine_var  - name of the Alpine x-data variable holding the active
+                   value, default "tab". Only used in alpine mode.
+#}
+{% set _mode = mode|default("link") %}
+{% set _var = alpine_var|default("tab") %}
+<div role="tablist" class="flex items-center gap-1 border-b border-border">
+  {% for item in items %}
+    {% if _mode == "link" %}
+      <a
+        href="{{ item.href }}"
+        class="inline-flex h-9 items-center border-b-2 px-3 text-sm font-medium transition-colors -mb-px
+          {% if item.active %}border-primary text-foreground{% else %}border-transparent text-muted-foreground hover:text-foreground{% endif %}"
+        aria-current="{{ 'page' if item.active else 'false' }}"
+        >{{ item.label }}</a
+      >
+    {% else %}
+      <button
+        type="button"
+        role="tab"
+        @click="{{ _var }} = '{{ item.value }}'"
+        :aria-selected="({{ _var }} === '{{ item.value }}').toString()"
+        :class="{{ _var }} === '{{ item.value }}' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
+        class="inline-flex h-9 items-center border-b-2 px-3 text-sm font-medium transition-colors -mb-px"
+        >{{ item.label }}</button
+      >
+    {% endif %}
+  {% endfor %}
+</div>

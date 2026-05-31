@@ -1,0 +1,42 @@
+[project]
+name = "pave"
+version = "0.0.1"
+requires-python = ">=3.12"
+description = "Production FastAPI template"
+
+[project.scripts]
+# `pip install -e .` drops a `pave` shim into .venv/bin that runs app.cli:cli.
+# After that `pave dev`, `pave test`, `pave setup`, etc. work from anywhere
+# inside the venv. See app/cli.py for the commands.
+pave = "app.cli:cli"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# Discover `app` and its subpackages (app.routers, app.auth, app.models, ...).
+# templates/, static/, content/, deploy/ are resources, not Python packages,
+# and are correctly excluded.
+include = ["app*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true

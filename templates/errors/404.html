@@ -1,0 +1,12 @@
+{% extends "errors/_layout.html" %}
+{% block title %}Page not found - {{ app_name }}{% endblock %}
+
+{% set _code = 404 %}
+{% set _headline = "We could not find that page." %}
+{% set _message = "The URL might be stale, the page may have moved, or the link
+that brought you here is from a different version of the site. Nothing on
+your end is broken." %}
+{% set _actions = [
+  {"href": "/", "label": "Back to home", "primary": True},
+  {"href": "/blog", "label": "Read the blog"},
+] %}

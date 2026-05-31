@@ -1,0 +1,102 @@
+{# Auth shell: two-column layout, no top nav.
+
+   Sign-in / sign-up / password reset / email confirm all extend this. The
+   left sidebar is brand-only and hides under lg: so phones see just the
+   form. The right panel centres a max-w-sm form column. Pages override
+   the `auth_content` block with their own form.
+
+   This layout is intentionally standalone (does not extend base.html):
+   auth pages should not show the app's signed-out top nav, and the
+   visual style is a focused conversion screen, not the app chrome. The
+   theme boot script is duplicated here for the same reason - keeping the
+   two layouts independent avoids a render order where one extends the
+   other and pulls a nav header it does not want. #}
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>
+      {% block title %}{{ app_name }}{% endblock %}
+    </title>
+    <script>
+      (function () {
+        try {
+          var v = localStorage.getItem("pave-theme") || "system";
+          if (v !== "light" && v !== "dark" && v !== "system") v = "system";
+          var dark =
+            v === "dark" ||
+            (v === "system" &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.setAttribute(
+            "data-theme",
+            dark ? "dark" : "light"
+          );
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="/static/css/app.css" />
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg" />
+    {% block head %}{% endblock %}
+  </head>
+  <body
+    class="min-h-screen bg-background font-sans text-foreground antialiased"
+  >
+    <div class="grid min-h-screen lg:grid-cols-2">
+      {# Left brand panel. Hidden on small screens; the form gets the full
+         viewport there. #}
+      <aside
+        class="relative hidden flex-col justify-between overflow-hidden border-r border-border bg-muted/40 px-12 py-10 lg:flex"
+      >
+        <a
+          href="/"
+          class="inline-flex items-center text-foreground transition-colors hover:text-primary"
+        >
+          {% include "_components/logo.html" %}
+        </a>
+        <div class="space-y-6">
+          <h2 class="font-serif text-4xl font-medium leading-tight tracking-tight">
+            {% block brand_heading %}A production surface, paved.{% endblock %}
+          </h2>
+          <ul class="space-y-3 text-sm text-muted-foreground">
+            {% block brand_points %}
+              <li>FastAPI, async SQLAlchemy, background jobs.</li>
+              <li>No Docker. No Node. SSH and systemd.</li>
+              <li>One deploy gate, one rollback path.</li>
+            {% endblock %}
+          </ul>
+        </div>
+        <p class="text-xs text-muted-foreground">
+          &copy; {{ app_name }}
+        </p>
+      </aside>
+
+      <main id="main-content" class="relative flex flex-col px-6 py-8 sm:px-10">
+        <div class="flex items-center justify-end gap-3">
+          {% include "_components/theme_toggle.html" %}
+          <span class="text-xs text-muted-foreground">{% block top_right %}{% endblock %}</span>
+        </div>
+
+        <div class="flex flex-1 items-center justify-center">
+          <div class="w-full max-w-sm">
+            {% block auth_content %}{% endblock %}
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/htmx.org@2.0.4"
+      integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/static/js/theme.js"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"
+    ></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

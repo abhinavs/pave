@@ -1,0 +1,35 @@
+{# Reusable table. Context: columns (list[str]), rows (list[list]). #}
+<div class="overflow-x-auto rounded-md border border-[--border-subtle]">
+  <table class="w-full text-sm">
+    <thead class="bg-[--bg-surface] text-left">
+      <tr>
+        {% for col in columns %}
+        <th
+          class="px-3 py-2 text-xs font-medium text-[--text-secondary]"
+          scope="col"
+        >
+          {{ col }}
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr class="border-t border-[--border-subtle] hover:bg-[--bg-hover]">
+        {% for cell in row %}
+        <td class="px-3 py-2 font-mono text-[--text-primary]">{{ cell }}</td>
+        {% endfor %}
+      </tr>
+      {% else %}
+      <tr>
+        <td
+          class="px-3 py-6 text-center text-[--text-secondary]"
+          colspan="{{ columns | length }}"
+        >
+          Nothing here yet.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

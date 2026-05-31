@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Account - {{ app_name }}{% endblock %}
+
+{% block content %}
+  <section class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Account
+      </h1>
+      <p class="max-w-2xl text-sm text-muted-foreground">
+        Your profile photo shows up in the header, in your sessions list, and
+        anywhere else the app needs a quick identity marker.
+      </p>
+    </header>
+
+    {# Flash messages. status=avatar-updated / avatar-removed render a
+       success line; status=error:<message> renders the validation error
+       from the service. The success/error split is deliberate - the
+       template knows the prefix, so the page does not need to special-
+       case every error string. #}
+    {% if status %}
+      {% if status.startswith("error:") %}
+        <div class="rounded-md border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+          {{ status[6:] }}
+        </div>
+      {% elif status == "avatar-updated" %}
+        <div class="rounded-md border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+          Avatar updated.
+        </div>
+      {% elif status == "avatar-removed" %}
+        <div class="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+          Avatar removed.
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <section class="space-y-4 rounded-lg border border-border bg-card p-6">
+      <header class="space-y-1">
+        <h2 class="text-base font-semibold text-foreground">Profile photo</h2>
+        <p class="text-sm text-muted-foreground">
+          PNG, JPEG, WEBP, or GIF up to 4 MB. We crop to a square and store
+          it at 256px.
+        </p>
+      </header>
+
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-center">
+        <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
+          {% if user.avatar_url %}
+            <img
+              src="{{ user.avatar_url }}"
+              alt="{{ user.name }}"
+              class="h-full w-full object-cover"
+            />
+          {% else %}
+            <span class="font-serif text-3xl text-muted-foreground">
+              {{ user.name[0] | upper }}
+            </span>
+          {% endif %}
+        </div>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <form
+            action="/account/avatar"
+            method="post"
+            enctype="multipart/form-data"
+            class="flex items-center gap-3"
+          >
+            {# Native file picker. We could HTMX-swap on completion, but
+               a full POST + 303 keeps the flow legible without JS - the
+               page reloads with the new image and a flash. #}
+            <label class="inline-flex h-9 cursor-pointer items-center rounded-md border border-border bg-background px-4 text-sm font-medium transition-colors hover:bg-accent">
+              <input
+                type="file"
+                name="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                class="hidden"
+                onchange="this.form.submit()"
+              />
+              Upload new
+            </label>
+          </form>
+
+          {% if user.avatar_url %}
+            <form action="/account/avatar/remove" method="post">
+              <button
+                type="submit"
+                class="inline-flex h-9 items-center rounded-md border border-destructive/30 px-4 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+              >
+                Remove
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-2 rounded-lg border border-border bg-card p-6">
+      <header class="space-y-1">
+        <h2 class="text-base font-semibold text-foreground">Identity</h2>
+        <p class="text-sm text-muted-foreground">
+          Name and email come from how you signed up. Editing them is on the
+          short list for the next release.
+        </p>
+      </header>
+      <dl class="grid gap-3 text-sm sm:grid-cols-[8rem,1fr]">
+        <dt class="text-muted-foreground">Name</dt>
+        <dd class="text-foreground">{{ user.name }}</dd>
+        <dt class="text-muted-foreground">Email</dt>
+        <dd class="text-foreground">{{ user.email }}</dd>
+        <dt class="text-muted-foreground">Sessions</dt>
+        <dd>
+          <a href="/auth/sessions" class="text-link underline-offset-4 hover:underline">
+            Manage active sessions -&gt;
+          </a>
+        </dd>
+      </dl>
+    </section>
+  </section>
+{% endblock %}

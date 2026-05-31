@@ -1,0 +1,63 @@
+{# Onboarding checklist banner.
+
+   Rendered on the home page when a logged-in user has incomplete
+   steps. Disappears on its own once the underlying User row reaches
+   "verified email + uploaded avatar"; no dismissal state lives on the
+   server, so the banner is always truthful about what is pending.
+
+   Expects `onboarding` in the template context (an OnboardingState
+   from app/services/onboarding.py). The home route only includes
+   this partial when `onboarding and not onboarding.is_complete`. #}
+
+<section class="my-10 space-y-4 rounded-lg border border-border bg-card p-6">
+  <header class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div class="space-y-1">
+      <h2 class="font-serif text-xl font-medium tracking-tight text-foreground">
+        Finish setting up your account
+      </h2>
+      <p class="text-sm text-muted-foreground">
+        {{ onboarding.remaining }}
+        of {{ onboarding.steps | length }} steps remaining. This card hides
+        itself once they are done.
+      </p>
+    </div>
+    {# A small progress chip. Not a fancy bar - the count is the signal. #}
+    <span class="inline-flex h-7 items-center rounded-full border border-border bg-muted px-3 text-xs font-medium text-muted-foreground">
+      {{ onboarding.steps | length - onboarding.remaining }}/{{ onboarding.steps | length }} done
+    </span>
+  </header>
+
+  <ol class="divide-y divide-border overflow-hidden rounded-md border border-border">
+    {% for step in onboarding.steps %}
+      <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-start gap-3">
+          {# Done = filled primary check; pending = empty circle. Both
+             are 20px so the row height does not jump. #}
+          {% if step.done %}
+            <span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              {% with name="check" %}{% include "_components/icon.html" %}{% endwith %}
+            </span>
+          {% else %}
+            <span class="mt-0.5 inline-block h-5 w-5 rounded-full border border-border" aria-hidden="true"></span>
+          {% endif %}
+          <div class="space-y-0.5">
+            <p class="text-sm font-medium {% if step.done %}text-muted-foreground line-through{% else %}text-foreground{% endif %}">
+              {{ step.title }}
+            </p>
+            {% if not step.done %}
+              <p class="text-sm text-muted-foreground">{{ step.body }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% if not step.done %}
+          <a
+            href="{{ step.href }}"
+            class="inline-flex h-8 items-center self-start rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-accent sm:self-auto"
+          >
+            Open
+          </a>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</section>

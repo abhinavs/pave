@@ -1,0 +1,40 @@
+{# Button. Variants: primary (default), secondary, outline, ghost, destructive.
+   Sizes: sm, md (default), lg, full. Pass `type` for the HTML type attribute
+   (default "submit"), and optional `name`/`value`/`disabled`/`hx_*` attrs via
+   `extra` (rendered verbatim as a single attribute string).
+
+   Context variables:
+     label    - visible text (required)
+     variant  - "primary" | "secondary" | "outline" | "ghost" | "destructive"
+     size     - "sm" | "md" | "lg" | "full" (lg+full are the auth-page shapes)
+     type     - HTML button type, default "submit"
+     extra    - any additional attrs as one string, e.g. 'hx-post="/x"'
+
+   Usage:
+     {% with label="Sign in", size="full" %}
+       {% include "_components/button.html" %}
+     {% endwith %}
+#}
+{% set _variant = variant|default("primary") %}
+{% set _size = size|default("md") %}
+{% set _type = type|default("submit") %}
+{% set _variants = {
+  "primary": "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/95 shadow-xs",
+  "secondary": "bg-surface-muted text-foreground hover:bg-accent hover:text-accent-foreground border border-border shadow-xs",
+  "outline": "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground shadow-xs",
+  "ghost": "text-foreground hover:bg-accent hover:text-accent-foreground",
+  "destructive": "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs",
+} %}
+{% set _sizes = {
+  "sm": "h-8 px-3 text-sm",
+  "md": "h-9 px-4 text-sm",
+  "lg": "h-10 px-6 text-base",
+  "full": "h-10 w-full px-6 text-base",
+} %}
+<button
+  type="{{ _type }}"
+  class="inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 {{ _variants[_variant] }} {{ _sizes[_size] }}"
+  {{ extra|default('')|safe }}
+>
+  {{ label }}
+</button>

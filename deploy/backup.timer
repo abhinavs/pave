@@ -1,0 +1,13 @@
+# Runs backup.service nightly. Persistent so a missed run (server off) fires
+# on the next boot instead of being skipped.
+
+[Unit]
+Description=Run the Pave PostgreSQL backup nightly
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

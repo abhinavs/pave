@@ -1,0 +1,30 @@
+{# Empty state. The "nothing here yet" placeholder for lists, search
+   results, and dashboards. Always pairs a clear primary action with
+   the explanation - an empty state without a next step is just a wall.
+
+   Context variables:
+     icon        - icon name from the icon partial, default "sparkle"
+     title       - headline (required)
+     description - one or two sentences explaining the state
+     action_href - href for the primary CTA, optional
+     action_label- visible CTA text, optional
+#}
+{% set _icon = icon|default("sparkle") %}
+<div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
+  <span class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-background text-muted-foreground ring-1 ring-border">
+    {% with name=_icon, class="h-6 w-6" %}
+      {% include "_components/icon.html" %}
+    {% endwith %}
+  </span>
+  <h3 class="text-base font-medium text-foreground">{{ title }}</h3>
+  {% if description %}
+    <p class="mt-1 max-w-sm text-sm text-muted-foreground">{{ description }}</p>
+  {% endif %}
+  {% if action_href and action_label %}
+    <a
+      href="{{ action_href }}"
+      class="mt-5 inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+      >{{ action_label }}</a
+    >
+  {% endif %}
+</div>

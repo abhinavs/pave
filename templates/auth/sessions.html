@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Active sessions - {{ app_name }}{% endblock %}
+
+{% block content %}
+  <section class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Active sessions
+      </h1>
+      <p class="max-w-2xl text-sm text-muted-foreground">
+        Every device currently signed into your account. Revoke a session
+        and the next request from that device falls back to anonymous. A
+        password reset revokes them all.
+      </p>
+    </header>
+
+    {% if sessions|length > 1 %}
+      <form action="/auth/sessions/revoke-others" method="post" class="flex">
+        <button
+          type="submit"
+          class="inline-flex h-9 items-center rounded-md border border-border bg-card px-4 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          Sign out everywhere else
+        </button>
+      </form>
+    {% endif %}
+
+    <ul class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+      {% for s in sessions %}
+        {% set is_current = s.id == current_session_id %}
+        <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="text-sm font-medium text-foreground" title="{{ s.user_agent or '' }}">
+                {{ s.user_agent | short_user_agent }}
+              </p>
+              {% if is_current %}
+                <span class="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  This device
+                </span>
+              {% endif %}
+            </div>
+            <p class="text-xs text-muted-foreground">
+              {% if s.ip_address %}{{ s.ip_address }} &middot; {% endif %}
+              signed in {{ s.created_at | relative_time }},
+              last active {{ s.last_used_at | relative_time }}
+            </p>
+          </div>
+
+          <form action="/auth/sessions/{{ s.id }}/revoke" method="post">
+            <button
+              type="submit"
+              class="inline-flex h-8 items-center rounded-md border border-destructive/30 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+            >
+              {% if is_current %}Sign out{% else %}Revoke{% endif %}
+            </button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Confirm your email - {{ app_name }}{% endblock %}
+{% block brand_heading %}Almost there.{% endblock %}
+
+{% block auth_content %}
+  <div class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Confirm your email
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        One click and your account is ready to use.
+      </p>
+    </header>
+
+    <form action="/auth/verify" method="post" class="space-y-5">
+      <input type="hidden" name="token" value="{{ token }}" />
+      {% with label="Confirm account", size="full" %}
+        {% include "_components/button.html" %}
+      {% endwith %}
+    </form>
+
+    <p class="text-center text-sm text-muted-foreground">
+      <a
+        href="/auth/login"
+        class="underline underline-offset-4 hover:text-foreground"
+        >Back to sign in</a
+      >
+    </p>
+  </div>
+{% endblock %}

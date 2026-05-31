@@ -1,0 +1,13 @@
+pytest>=8
+pytest-asyncio>=0.23
+httpx>=0.27
+ipython>=8
+watchfiles>=0.21
+mypy>=1.9
+ruff>=0.4
+pre-commit>=3.7
+pydantic>=2.0
+aiosqlite>=0.20
+honcho>=1.1
+fabric>=3.2
+sqlalchemy-annotate>=0.1

@@ -1,0 +1,16 @@
+{% extends "base.html" %} {% block title %}{{ post.title }} - {{ app_name }}{%
+endblock %} {% block head %}
+<meta name="description" content="{{ post.description }}" />
+{% endblock %} {% block content %}
+<article class="prose mx-auto">
+  <header class="mb-6 space-y-1">
+    <h1 class="text-2xl font-semibold">{{ post.title }}</h1>
+    <p class="font-mono text-xs text-[--text-secondary]">
+      {% if post.date %}{{ post.date.isoformat() }}{% endif %} {% if
+      post.author %} · {{ post.author }}{% endif %} · {{ post.reading_time }}
+      min read
+    </p>
+  </header>
+  {{ post.html | safe }}
+</article>
+{% endblock %}

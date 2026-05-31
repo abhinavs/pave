@@ -1,0 +1,17 @@
+{# Two-column app shell. Context: nav (list of {href,label,active}),
+   optional body (safe HTML). The active item is tinted, never filled. #}
+<div class="flex gap-6">
+  <aside class="w-56 shrink-0">
+    <nav class="flex flex-col gap-1">
+      {% for item in nav %}
+      <a
+        href="{{ item.href }}"
+        {% if item.active %}aria-current="page"{% endif %}
+        class="rounded-sm px-3 py-1.5 text-sm {% if item.active %}bg-primary-500/10 text-primary-400 font-medium{% else %}text-[--text-secondary] hover:bg-[--bg-hover]{% endif %}"
+        >{{ item.label }}</a
+      >
+      {% endfor %}
+    </nav>
+  </aside>
+  <section class="min-w-0 flex-1">{{ body | default('') | safe }}</section>
+</div>

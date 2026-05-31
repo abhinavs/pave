@@ -1,0 +1,14 @@
+# Oneshot service that runs the backup script. Triggered by backup.timer, not
+# enabled on its own. Copy both to /etc/systemd/system/ and
+# `sudo systemctl enable --now backup.timer`.
+
+[Unit]
+Description=Pave PostgreSQL backup
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+ExecStart=/srv/pave/current/deploy/backup.sh

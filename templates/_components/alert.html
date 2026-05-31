@@ -1,0 +1,40 @@
+{# Alert banner. Variants: info, success, warning, destructive (default).
+   A leading icon, a title line, and optional body text. Icons come from
+   the shared Phosphor partial so the alert and the rest of the UI share
+   one drawing language.
+
+   Context variables:
+     title    - one-line headline (required)
+     body     - secondary line, optional
+     variant  - "info" | "success" | "warning" | "destructive"
+#}
+{% set _variant = variant|default("destructive") %}
+{# Backgrounds stay on the vivid 500-ish hue at low opacity so the wash
+   reads the same in both themes; ink uses the *-ink token, which steps
+   deeper in light mode and brighter in dark mode for legibility. #}
+{% set _styles = {
+  "info": "bg-primary/5 text-link border-primary/30",
+  "success": "bg-success/10 text-success-ink border-success/30",
+  "warning": "bg-warning/15 text-warning-ink border-warning/40",
+  "destructive": "bg-destructive/5 text-destructive-ink border-destructive/30",
+} %}
+{% set _icon = {
+  "info": "info",
+  "success": "check-circle",
+  "warning": "warning",
+  "destructive": "x-circle",
+}[_variant] %}
+<div
+  role="alert"
+  class="relative flex w-full gap-3 rounded-md border px-4 py-3 {{ _styles[_variant] }}"
+>
+  {% with name=_icon, class="mt-0.5 h-4 w-4" %}
+    {% include "_components/icon.html" %}
+  {% endwith %}
+  <div class="flex-1 space-y-1 text-sm">
+    <p class="font-medium leading-none">{{ title }}</p>
+    {% if body %}
+      <div class="text-sm opacity-90">{{ body }}</div>
+    {% endif %}
+  </div>
+</div>

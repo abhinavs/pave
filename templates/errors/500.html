@@ -1,0 +1,11 @@
+{% extends "errors/_layout.html" %}
+{% block title %}Something went wrong - {{ app_name }}{% endblock %}
+
+{% set _code = 500 %}
+{% set _headline = "Something went wrong on our end." %}
+{% set _message = "The request reached us but the handler raised before it could
+finish. The error has been logged with the reference below; if you keep
+hitting it, that reference is the fastest way to get someone to look." %}
+{% set _actions = [
+  {"href": "/", "label": "Back to home", "primary": True},
+] %}

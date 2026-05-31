@@ -1,0 +1,18 @@
+{# Live status via the htmx SSE extension. Context: sse_url. The server
+   streams `status` events; the inner span is replaced on each one. Requires
+   the htmx sse extension script (add it in the page that uses this). #}
+<div
+  hx-ext="sse"
+  sse-connect="{{ sse_url }}"
+  class="inline-flex items-center gap-2 rounded-sm border border-[--border-subtle] bg-[--bg-surface] px-3 py-1.5 text-sm"
+>
+  <span
+    class="h-2 w-2 rounded-full bg-info"
+    aria-hidden="true"
+  ></span>
+  <span
+    sse-swap="status"
+    class="font-mono text-[--text-secondary]"
+    >connecting…</span
+  >
+</div>

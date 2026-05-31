@@ -1,0 +1,22 @@
+{# Blog post list items. A fragment, not a page: rendered inside the blog
+   index and also reusable as an htmx infinite-scroll response. Context:
+   posts (list of content.Doc). #}
+{% for post in posts %}
+<li class="space-y-1">
+  {# Hover uses the semantic `primary` (theme-aware) rather than a fixed
+     numeric step so the title darkens on light backgrounds and brightens
+     on dark, instead of going pale on white. #}
+  <a
+    href="/blog/{{ post.slug }}"
+    class="text-base font-medium transition-colors hover:text-primary"
+    >{{ post.title }}</a
+  >
+  <p class="text-sm text-[--text-secondary]">{{ post.description }}</p>
+  <p class="font-mono text-xs text-[--text-secondary]">
+    {% if post.date %}{{ post.date.isoformat() }} ·
+    {% endif %}{{ post.reading_time }} min read
+  </p>
+</li>
+{% else %}
+<li class="text-sm text-[--text-secondary]">No posts yet.</li>
+{% endfor %}

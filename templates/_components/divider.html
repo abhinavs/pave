@@ -1,0 +1,22 @@
+{# Horizontal divider with an optional centred label. Used in auth pages to
+   separate the OAuth row from the email form ("or sign in with email").
+
+   Context variables:
+     label - centred uppercase text, optional. Without it, the divider is
+             a plain hairline.
+#}
+{% if label %}
+  <div class="relative my-6" role="separator" aria-orientation="horizontal">
+    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+      <div class="w-full border-t border-border"></div>
+    </div>
+    <div class="relative flex justify-center">
+      <span
+        class="bg-background px-3 text-xs uppercase tracking-wider text-muted-foreground"
+        >{{ label }}</span
+      >
+    </div>
+  </div>
+{% else %}
+  <div class="h-px w-full shrink-0 bg-border" role="separator"></div>
+{% endif %}

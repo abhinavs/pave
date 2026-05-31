@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+!.env.schema
+
+# Local databases
+*.db
+pave.db
+pave.db-journal
+
+# Tailwind standalone binary (downloaded by fab setup-local)
+bin/tailwindcss
+
+# User uploads (avatars and anything else the AvatarStorage points at)
+static/uploads/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp

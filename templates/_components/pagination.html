@@ -1,0 +1,30 @@
+{# Page navigation. Context: page (PaginatedResponse: .page, .pages) and
+   base_url. Works with attribute access or dict keys so it can take the
+   schema object directly or a plain dict. #}
+{% set current = page.page if page.page is defined else page['page'] %}
+{% set total_pages = page.pages if page.pages is defined else page['pages'] %}
+<nav class="flex items-center justify-between text-sm" aria-label="Pagination">
+  {% if current > 1 %}
+  <a
+    href="{{ base_url }}?page={{ current - 1 }}"
+    class="rounded-sm border border-[--border-muted] px-3 py-1.5 hover:bg-[--bg-hover]"
+    >Previous</a
+  >
+  {% else %}
+  <span class="px-3 py-1.5 text-[--text-secondary]">Previous</span>
+  {% endif %}
+
+  <span class="font-mono text-xs text-[--text-secondary]">
+    Page {{ current }} of {{ total_pages }}
+  </span>
+
+  {% if current < total_pages %}
+  <a
+    href="{{ base_url }}?page={{ current + 1 }}"
+    class="rounded-sm border border-[--border-muted] px-3 py-1.5 hover:bg-[--bg-hover]"
+    >Next</a
+  >
+  {% else %}
+  <span class="px-3 py-1.5 text-[--text-secondary]">Next</span>
+  {% endif %}
+</nav>

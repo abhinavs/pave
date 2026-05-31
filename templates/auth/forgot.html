@@ -1,0 +1,35 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Reset your password - {{ app_name }}{% endblock %}
+{% block brand_heading %}Resetting your password.{% endblock %}
+
+{% block auth_content %}
+  <div class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Reset your password
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        Enter the email on your account. If we find a match, we will send a
+        reset link within a minute.
+      </p>
+    </header>
+
+    <form action="/auth/forgot" method="post" class="space-y-5">
+      {% with name="email", label="Email", type="email", required=True, autofocus=True, placeholder="you@example.com" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with label="Send reset link", size="full" %}
+        {% include "_components/button.html" %}
+      {% endwith %}
+    </form>
+
+    <p class="text-center text-sm text-muted-foreground">
+      <a
+        href="/auth/login"
+        class="underline underline-offset-4 hover:text-foreground"
+        >Back to sign in</a
+      >
+    </p>
+  </div>
+{% endblock %}

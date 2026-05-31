@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Confirm your email - {{ app_name }}{% endblock %}
+
+{% block content %}
+  <section class="mx-auto max-w-xl space-y-6 py-10">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Confirm your email
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        We sent a verification link to
+        <span class="font-mono text-foreground">{{ user.email }}</span>
+        when you signed up. Open the inbox, click the link, and you are
+        back here.
+      </p>
+    </header>
+
+    {% if status == "sent" %}
+      <div class="rounded-md border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+        New link sent. Check your inbox - it may take a minute to arrive.
+      </div>
+    {% endif %}
+
+    <div class="space-y-3 rounded-lg border border-border bg-card p-5">
+      <p class="text-sm text-foreground">
+        Cannot find the email? Sometimes it gets stuck behind a filter.
+        Resend it from here.
+      </p>
+      <form action="/auth/resend" method="post" class="flex">
+        <button
+          type="submit"
+          class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Resend the link
+        </button>
+      </form>
+    </div>
+
+    <p class="text-xs text-muted-foreground">
+      Signed in as the wrong account?
+      <a href="/auth/logout" class="text-link underline-offset-4 hover:underline">Log out</a>
+      and try again.
+    </p>
+  </section>
+{% endblock %}

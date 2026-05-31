@@ -1,0 +1,53 @@
+{# Text/email/password/etc input with an optional label + helper line.
+
+   The component handles the label, the input, and the help text in one
+   include so the caller does not repeat the label/help wrapper for every
+   field. Errors are an inline element under the input - drop a `error`
+   string in context to surface one.
+
+   Context variables:
+     name        - form name and input id (required)
+     label       - visible label text (required)
+     type        - text|email|password|search|url|tel (default "text")
+     required    - bool, renders the required attribute and a "*" marker
+     autocomplete- HTML autocomplete token, default by type below
+     autofocus   - bool
+     placeholder - placeholder text
+     value       - pre-filled value (used by form-with-errors re-renders)
+     help        - small helper text under the label
+     minlength   - integer
+     error       - validation error to render in red under the field
+#}
+{% set _type = type|default("text") %}
+{% set _ac = autocomplete|default({
+  "email": "email",
+  "password": "current-password",
+  "tel": "tel",
+}.get(_type, "off")) %}
+<div class="space-y-1.5">
+  <label
+    for="{{ name }}"
+    class="text-sm font-medium leading-none text-foreground"
+    >{{ label }}{% if required %}<span class="ml-0.5 text-destructive" aria-hidden="true">*</span>{% endif %}</label
+  >
+  {% if help %}
+    <p class="text-sm text-muted-foreground">{{ help }}</p>
+  {% endif %}
+  <div class="relative w-full">
+    <input
+      id="{{ name }}"
+      name="{{ name }}"
+      type="{{ _type }}"
+      {% if value %}value="{{ value }}"{% endif %}
+      {% if required %}required{% endif %}
+      {% if autofocus %}autofocus{% endif %}
+      autocomplete="{{ _ac }}"
+      {% if minlength %}minlength="{{ minlength }}"{% endif %}
+      {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+      class="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+    />
+  </div>
+  {% if error %}
+    <p class="text-sm text-destructive">{{ error }}</p>
+  {% endif %}
+</div>

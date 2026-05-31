@@ -1,0 +1,31 @@
+# systemd unit for the Soniq background worker. Copy to
+# /etc/systemd/system/pave-worker.service, then
+# `sudo systemctl enable --now pave-worker`. fab deploy restarts this
+# alongside pave-api after the symlink flip.
+
+[Unit]
+Description=Pave Soniq worker
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+WorkingDirectory=/srv/pave/current
+EnvironmentFile=/srv/pave/current/.env.production
+
+# `pave worker` runs soniq.run_worker(). Concurrency is a worker concern,
+# not a deploy concern: tune it here, not in fabfile.
+ExecStart=/srv/pave/current/.venv/bin/pave worker --concurrency 4
+
+KillMode=mixed
+Restart=always
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

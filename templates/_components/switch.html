@@ -1,0 +1,39 @@
+{# Switch. A binary toggle that submits like a checkbox but reads as
+   "on / off" instead of "yes / no". The visual knob is pure CSS via
+   peer-checked - no Alpine - so this works inside a regular form.
+
+   Like the login remember-me checkbox, callers who need a value to
+   always post should pair the switch with a hidden input of the
+   opposite value above it.
+
+   Context variables:
+     name     - form name and input id (required)
+     label    - visible label text (required)
+     checked  - bool, pre-selects on
+     value    - submitted value when on, default "true"
+     help     - secondary help text rendered under the label
+#}
+<label
+  for="{{ name }}"
+  class="flex cursor-pointer items-center justify-between gap-4 text-sm"
+>
+  <span class="flex-1 space-y-0.5">
+    <span class="block leading-tight text-foreground">{{ label }}</span>
+    {% if help %}
+      <span class="block text-xs text-muted-foreground">{{ help }}</span>
+    {% endif %}
+  </span>
+  <span class="relative inline-block h-5 w-9 shrink-0">
+    <input
+      type="checkbox"
+      id="{{ name }}"
+      name="{{ name }}"
+      value="{{ value|default('true') }}"
+      {% if checked %}checked{% endif %}
+      class="peer h-5 w-9 cursor-pointer appearance-none rounded-full bg-muted transition-colors checked:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    />
+    <span
+      class="pointer-events-none absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-background shadow-xs transition-transform peer-checked:translate-x-4"
+    ></span>
+  </span>
+</label>

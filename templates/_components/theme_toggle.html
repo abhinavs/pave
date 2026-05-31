@@ -1,0 +1,63 @@
+{# Theme toggle. Three-state pill: light, dark, system. Persists the choice
+   in localStorage under "pave-theme" and flips data-theme on <html>.
+
+   The actual apply-before-paint step lives in the inline boot script in
+   base.html / auth/_layout.html - this component just gives the user a
+   way to change the persisted choice. Keep the two in sync.
+
+   Context variables:
+     align    - "left" | "right" (default "right") - just chooses the dropdown anchor
+#}
+{% set _align = align|default("right") %}
+<div
+  x-data="themeToggle()"
+  x-init="init()"
+  class="relative"
+>
+  <button
+    type="button"
+    @click="open = !open"
+    @click.outside="open = false"
+    :aria-pressed="open"
+    aria-label="Theme"
+    class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+  >
+    {# Two icons, one visible at a time. The active one is keyed off the
+       resolved theme so the button always reflects what's on screen, not
+       the stored preference. #}
+    <span x-show="resolved === 'light'">
+      {% with name="sun" %}{% include "_components/icon.html" %}{% endwith %}
+    </span>
+    <span x-show="resolved === 'dark'">
+      {% with name="moon" %}{% include "_components/icon.html" %}{% endwith %}
+    </span>
+  </button>
+
+  <div
+    x-show="open"
+    x-cloak
+    x-transition.opacity.duration.100ms
+    class="absolute z-20 mt-2 w-36 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md {% if _align == 'right' %}right-0{% else %}left-0{% endif %}"
+    role="menu"
+  >
+    {# Three explicit options. "System" lets the OS decide and updates
+       live if the user toggles their OS theme while the page is open. #}
+    <template x-for="opt in options" :key="opt.value">
+      <button
+        type="button"
+        role="menuitemradio"
+        :aria-checked="preference === opt.value"
+        @click="set(opt.value)"
+        class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        :class="preference === opt.value ? 'text-foreground' : 'text-muted-foreground'"
+      >
+        <span x-text="opt.label"></span>
+        <span x-show="preference === opt.value">
+          {% with name="check", class="h-3.5 w-3.5" %}
+            {% include "_components/icon.html" %}
+          {% endwith %}
+        </span>
+      </button>
+    </template>
+  </div>
+</div>

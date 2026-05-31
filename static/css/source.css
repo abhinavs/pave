@@ -1,0 +1,378 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Design tokens. Every visual decision in a template traces back to one of
+   these custom properties, never a raw Tailwind color. The token names match
+   tailwind.config.js so utilities like bg-background, text-foreground,
+   border-border, ring-ring just work.
+
+   Two layers:
+     * Primitive scales (--color-primary-*, --color-neutral-*, --color-danger-*)
+       are the palette. They never change between themes.
+     * Semantic tokens (--color-background, --color-foreground, ...) point at
+       primitives. The dark theme rebinds the semantics, not the palette.
+
+   Light is the default under :root. data-theme="dark" overrides; base.html
+   sets that attribute, so dark renders by default. To flip, remove the
+   attribute or set data-theme="light".
+   --------------------------------------------------------------------------- */
+:root {
+  /* Typography. Three families self-hosted as woff2 under /static/fonts/ -
+     Inter (body, variable axis), Newsreader (display serif, variable axis),
+     and IBM Plex Mono (code, two static weights). Plex Mono ships as static
+     weights upstream rather than a single variable file, so we carry 400
+     and 600 individually. Pave avoids Google Fonts at runtime so the page
+     never reaches out to a third-party for type. The stacks fall through to
+     system fonts so unset hosts still look reasonable. */
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  --font-serif:
+    "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman", Times,
+    serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+
+  /* Three-tier palette. Primary is the action hue, secondary is the
+     supporting hue (slate, cooler than neutral), tertiary is the warm
+     neutral that backs muted surfaces and dividers. The palettes never
+     change between themes - the semantic layer below shifts which step
+     each role binds to. */
+
+  /* Primary scale (sky, OKLCH). Actions, interactive elements, active states. */
+  --color-primary-50: oklch(0.977 0.013 236.62);
+  --color-primary-100: oklch(0.951 0.026 236.824);
+  --color-primary-200: oklch(0.901 0.058 230.902);
+  --color-primary-300: oklch(0.828 0.111 230.318);
+  --color-primary-400: oklch(0.746 0.16 232.661);
+  --color-primary-500: oklch(0.685 0.169 237.323);
+  --color-primary-600: oklch(0.588 0.158 241.966);
+  --color-primary-700: oklch(0.5 0.134 242.749);
+  --color-primary-800: oklch(0.443 0.11 240.79);
+  --color-primary-900: oklch(0.391 0.09 240.876);
+  --color-primary-950: oklch(0.293 0.066 243.157);
+
+  /* Secondary scale (slate, OKLCH). Support structure, secondary actions,
+     borders on interactive components. Cooler than the warm tertiary. */
+  --color-secondary-50: oklch(0.984 0.003 247.858);
+  --color-secondary-100: oklch(0.968 0.007 247.896);
+  --color-secondary-200: oklch(0.929 0.013 255.508);
+  --color-secondary-300: oklch(0.869 0.022 252.894);
+  --color-secondary-400: oklch(0.704 0.04 256.788);
+  --color-secondary-500: oklch(0.554 0.046 257.417);
+  --color-secondary-600: oklch(0.446 0.043 257.281);
+  --color-secondary-700: oklch(0.372 0.044 257.287);
+  --color-secondary-800: oklch(0.279 0.041 260.031);
+  --color-secondary-900: oklch(0.208 0.042 265.755);
+  --color-secondary-950: oklch(0.129 0.042 264.695);
+
+  /* Tertiary scale (zinc, OKLCH). Neutral surfaces, backgrounds, dividers,
+     muted text. This is also exposed as --color-neutral-* for back-compat
+     with templates that pre-date the tiered names. */
+  --color-tertiary-0: oklch(1 0 0);
+  --color-tertiary-50: oklch(0.985 0 0);
+  --color-tertiary-100: oklch(0.967 0.001 286.375);
+  --color-tertiary-200: oklch(0.92 0.004 286.32);
+  --color-tertiary-300: oklch(0.871 0.006 286.286);
+  --color-tertiary-400: oklch(0.705 0.015 286.067);
+  --color-tertiary-500: oklch(0.552 0.016 285.938);
+  --color-tertiary-600: oklch(0.442 0.017 285.786);
+  --color-tertiary-700: oklch(0.37 0.013 285.805);
+  --color-tertiary-800: oklch(0.274 0.006 286.033);
+  --color-tertiary-900: oklch(0.21 0.006 285.885);
+  --color-tertiary-950: oklch(0.141 0.005 285.823);
+
+  /* Legacy neutral-* aliases. Older templates and the prose CSS still
+     reach for these. They resolve to the tertiary scale so the two
+     names stay in lockstep. */
+  --color-neutral-0: var(--color-tertiary-0);
+  --color-neutral-50: var(--color-tertiary-50);
+  --color-neutral-100: var(--color-tertiary-100);
+  --color-neutral-200: var(--color-tertiary-200);
+  --color-neutral-300: var(--color-tertiary-300);
+  --color-neutral-400: var(--color-tertiary-400);
+  --color-neutral-500: var(--color-tertiary-500);
+  --color-neutral-600: var(--color-tertiary-600);
+  --color-neutral-700: var(--color-tertiary-700);
+  --color-neutral-800: var(--color-tertiary-800);
+  --color-neutral-900: var(--color-tertiary-900);
+  --color-neutral-950: var(--color-tertiary-950);
+
+  /* Status palette. The 500 step is the canonical hue for solid fills
+     (badges, dots, swatches). The 700 step lands when the same colour
+     has to sit as text or an icon on a near-white surface in the light
+     theme - 500 is too washed there. Dark mode goes the other way and
+     prefers the 400 step so it doesn't burn against a dark background. */
+  --color-danger-50: oklch(0.971 0.013 17.38);
+  --color-danger-400: oklch(0.704 0.191 22.216);
+  --color-danger-500: oklch(0.637 0.237 25.331);
+  --color-danger-600: oklch(0.577 0.245 27.325);
+  --color-danger-700: oklch(0.505 0.213 27.518);
+  --color-success-400: oklch(0.765 0.177 163.223);
+  --color-success-500: oklch(0.696 0.17 162.48);
+  --color-success-600: oklch(0.596 0.145 163.225);
+  --color-success-700: oklch(0.508 0.118 165.612);
+  --color-warning-400: oklch(0.852 0.199 91.936);
+  --color-warning-500: oklch(0.795 0.184 86.047);
+  --color-warning-600: oklch(0.681 0.162 75.834);
+  --color-warning-700: oklch(0.554 0.135 66.442);
+
+  /* Semantic tokens, light theme. */
+  --color-background: var(--color-neutral-0);
+  --color-foreground: var(--color-neutral-950);
+  --color-surface: var(--color-neutral-0);
+  --color-surface-muted: var(--color-neutral-50);
+  --color-surface-subtle: var(--color-neutral-100);
+  --color-surface-elevated: var(--color-neutral-0);
+  --color-card: var(--color-neutral-0);
+  --color-card-foreground: var(--color-neutral-950);
+  --color-popover: var(--color-neutral-0);
+  --color-popover-foreground: var(--color-neutral-950);
+  --color-muted: var(--color-neutral-100);
+  --color-muted-foreground: var(--color-neutral-500);
+  --color-accent: var(--color-neutral-100);
+  --color-accent-foreground: var(--color-neutral-900);
+  --color-primary: var(--color-primary-600);
+  --color-primary-foreground: var(--color-neutral-0);
+  --color-secondary: var(--color-secondary-100);
+  --color-secondary-foreground: var(--color-secondary-900);
+  --color-tertiary: var(--color-tertiary-100);
+  --color-tertiary-foreground: var(--color-tertiary-900);
+  --color-link: var(--color-primary-800);
+  --color-link-hover: var(--color-primary-900);
+  --color-destructive: var(--color-danger-600);
+  --color-destructive-foreground: var(--color-neutral-0);
+  /* Status-on-surface ink. The plain --color-success / --color-warning /
+     --color-destructive variables stay tuned to the solid 500-ish step
+     for swatches and dot indicators; -ink variants step deeper so they
+     read on a near-white background when used as text or icon colour. */
+  --color-success-ink: var(--color-success-700);
+  --color-warning-ink: var(--color-warning-700);
+  --color-destructive-ink: var(--color-danger-700);
+  --color-border: var(--color-neutral-200);
+  --color-border-strong: var(--color-neutral-300);
+  --color-input: var(--color-neutral-200);
+  --color-ring: var(--color-primary-400);
+
+  /* Shape and depth. */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-sm:
+    0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-md:
+    0 4px 8px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg:
+    0 8px 24px -4px rgb(0 0 0 / 0.1), 0 4px 8px -4px rgb(0 0 0 / 0.06);
+  --shadow-xl:
+    0 20px 40px -8px rgb(0 0 0 / 0.18), 0 8px 16px -8px rgb(0 0 0 / 0.1);
+
+  /* Long-form prose layout knobs (kept from the prior version). */
+  --content-prose: 680px;
+  --leading-relaxed: 1.7;
+
+  /* Legacy token aliases. Templates outside the auth flow still reference
+     these short names; they resolve to the same semantic colours as the
+     new tokens so dark/light parity is preserved without touching every
+     template at once. Remove an alias once its last reference is gone. */
+  --bg-base: var(--color-background);
+  --bg-surface: var(--color-surface-muted);
+  --bg-hover: var(--color-accent);
+  --text-primary: var(--color-foreground);
+  --text-secondary: var(--color-muted-foreground);
+  --border-subtle: var(--color-border);
+  --border-muted: var(--color-border-strong);
+}
+
+:root[data-theme="dark"] {
+  --color-background: var(--color-neutral-950);
+  --color-foreground: var(--color-neutral-50);
+  --color-surface: var(--color-neutral-900);
+  --color-surface-muted: var(--color-neutral-800);
+  --color-surface-subtle: var(--color-neutral-700);
+  --color-surface-elevated: var(--color-neutral-700);
+  --color-card: var(--color-neutral-900);
+  --color-card-foreground: var(--color-neutral-50);
+  --color-popover: var(--color-neutral-900);
+  --color-popover-foreground: var(--color-neutral-50);
+  --color-muted: var(--color-neutral-800);
+  --color-muted-foreground: var(--color-neutral-400);
+  --color-accent: var(--color-neutral-800);
+  --color-accent-foreground: var(--color-neutral-50);
+  --color-primary: var(--color-primary-400);
+  --color-primary-foreground: var(--color-neutral-950);
+  --color-secondary: var(--color-secondary-800);
+  --color-secondary-foreground: var(--color-secondary-50);
+  --color-tertiary: var(--color-tertiary-800);
+  --color-tertiary-foreground: var(--color-tertiary-50);
+  --color-link: var(--color-primary-400);
+  --color-link-hover: var(--color-primary-300);
+  /* Dark theme flips: the brighter 400-ish step is what reads on a dark
+     surface without burning. The base swatch colours stay on 500-600
+     for parity with the light theme. */
+  --color-success-ink: var(--color-success-400);
+  --color-warning-ink: var(--color-warning-400);
+  --color-destructive-ink: var(--color-danger-400);
+  --color-border: var(--color-neutral-700);
+  --color-border-strong: var(--color-neutral-600);
+  --color-input: var(--color-neutral-700);
+  --color-ring: var(--color-primary-400);
+}
+
+/* Self-hosted variable fonts. The woff2s in /static/fonts/ are the latin
+   subset of each family's variable file, fetched once from Google Fonts
+   and committed here so production renders without any third-party call.
+   To refresh, re-run the curl pipeline documented in static/fonts/README. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/static/fonts/inter.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/static/fonts/newsreader.woff2") format("woff2-variations");
+}
+/* IBM Plex Mono is shipped as discrete static weights, not a variable
+   axis - we self-host the two cuts the UI actually reaches for (400 for
+   body code/ids/timestamps, 600 for emphasis and the lowercased mono
+   wordmark). Adding 500 if a future component needs medium is cheap. */
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/ibm-plex-mono-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/ibm-plex-mono-600.woff2") format("woff2");
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Long-form content. Scoped to .prose so it never leaks into the app UI,
+   which stays on Tailwind utilities. Colours come from the same tokens. */
+.prose {
+  max-width: var(--content-prose);
+  line-height: var(--leading-relaxed);
+  color: var(--color-foreground);
+}
+.prose h1,
+.prose h2,
+.prose h3 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+}
+.prose h1 {
+  font-size: 1.75rem;
+}
+.prose h2 {
+  font-size: 1.35rem;
+}
+.prose h3 {
+  font-size: 1.15rem;
+}
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote {
+  margin: 0.9em 0;
+  font-size: 0.95rem;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+.prose li {
+  margin: 0.3em 0;
+}
+.prose a {
+  color: var(--color-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose a:hover {
+  color: var(--color-link-hover);
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--color-surface-muted);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-xs);
+}
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1em;
+  overflow-x: auto;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+.prose blockquote {
+  border-left: 2px solid var(--color-border-strong);
+  padding-left: 1em;
+  color: var(--color-muted-foreground);
+}
+
+/* Alpine sets x-cloak on elements that should stay hidden until it
+   initialises. Without this rule there is a brief frame where mobile
+   drawer panels and theme-toggle menus flash open before Alpine takes
+   over. The selector matches Alpine's own recommended pattern. */
+[x-cloak] {
+  display: none !important;
+}
+
+/* HTMX swap transitions. Never set transition inline or via JS; reference
+   these classes instead. */
+@layer utilities {
+  .htmx-swapping {
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+  }
+  .htmx-added {
+    opacity: 0;
+  }
+  .htmx-settling {
+    opacity: 1;
+    transition: opacity 200ms ease-in;
+  }
+}

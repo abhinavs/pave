@@ -1,0 +1,53 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Sign up - {{ app_name }}{% endblock %}
+{% block brand_heading %}Start building on a paved path.{% endblock %}
+
+{% block auth_content %}
+  <div class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Create your account
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        Already have one?
+        <a
+          href="/auth/login"
+          class="font-medium text-link underline-offset-4 hover:underline"
+          >Sign in</a
+        >
+      </p>
+    </header>
+
+    {# OAuth above email is the shape reflex_kit uses: most accounts get
+       created via a social provider, so the email form sits underneath. #}
+    {% with verb = "Sign up with" %}
+      {% include "auth/_oauth_buttons.html" %}
+    {% endwith %}
+
+    {% with label = "or with email" %}
+      {% include "_components/divider.html" %}
+    {% endwith %}
+
+    <form action="/auth/signup" method="post" class="space-y-5">
+      {% with name="name", label="Name", required=True, autofocus=True, placeholder="Ada Lovelace" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with name="email", label="Email", type="email", required=True, placeholder="you@example.com" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with name="password", label="Password", type="password", required=True, minlength=8, autocomplete="new-password", help="At least 8 characters." %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with label="Create account", size="full" %}
+        {% include "_components/button.html" %}
+      {% endwith %}
+
+      <p class="text-center text-xs text-muted-foreground">
+        By continuing you agree to the terms and the privacy policy.
+      </p>
+    </form>
+  </div>
+{% endblock %}

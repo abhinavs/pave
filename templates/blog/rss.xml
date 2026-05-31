@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>{{ app_name }} Blog</title>
+    <link>{{ base }}/blog</link>
+    <description>Latest posts from {{ app_name }}.</description>
+    {% for post in posts %}<item>
+      <title>{{ post.title }}</title>
+      <link>{{ base }}/blog/{{ post.slug }}</link>
+      <description>{{ post.description }}</description>
+      {% if post.date %}<pubDate>{{ post.date.isoformat() }}</pubDate>{% endif %}
+      <guid isPermaLink="true">{{ base }}/blog/{{ post.slug }}</guid>
+    </item>
+    {% endfor %}
+  </channel>
+</rss>

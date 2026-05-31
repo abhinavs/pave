@@ -1,0 +1,34 @@
+{% extends "base.html" %} {% block title %}Webhooks - {{ app_name }}{%
+endblock %} {% block content %}
+<section class="space-y-4">
+  <h1 class="text-2xl font-semibold">Webhook events</h1>
+  <p class="text-sm text-[--text-secondary]">
+    Type to filter by integration slug. This is the canonical HTMX wiring.
+  </p>
+
+  <input
+    type="search"
+    name="q"
+    placeholder="Search by slug"
+    autocomplete="off"
+    class="h-8 w-full max-w-sm rounded border border-[--border-muted] bg-[--bg-surface] px-3 py-1.5 text-sm"
+    hx-get="/webhooks/search"
+    hx-trigger="keyup changed delay:300ms"
+    hx-target="#webhook-rows"
+    hx-swap="innerHTML"
+  />
+
+  <table class="w-full border border-[--border-subtle] text-left">
+    <thead class="bg-[--bg-surface] text-xs font-medium uppercase">
+      <tr>
+        <th class="px-3 py-2">Slug</th>
+        <th class="px-3 py-2">Status</th>
+        <th class="px-3 py-2">Received</th>
+      </tr>
+    </thead>
+    <tbody id="webhook-rows">
+      {% include "_partials/webhook_rows.html" %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>{{ base }}/</loc></url>
+  <url><loc>{{ base }}/blog</loc></url>
+  {% for p in pages %}<url><loc>{{ base }}/{{ p.slug }}</loc></url>
+  {% endfor %}{% for post in posts %}<url><loc>{{ base }}/blog/{{ post.slug }}</loc>{% if post.date %}<lastmod>{{ post.date.isoformat() }}</lastmod>{% endif %}</url>
+  {% endfor %}
+</urlset>

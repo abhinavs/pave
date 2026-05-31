@@ -1,0 +1,39 @@
+{# Card. A bordered surface for one self-contained block of content.
+   Composes with a title/description header and a footer slot.
+
+   The contract is unusual for a partial: callers pass the body in
+   via a `body` context variable (string or markup-safe). For complex
+   bodies that you don't want to inline as a string, render the card
+   shell yourself and skip the include - the styling is just two
+   utility chains and is fine to copy.
+
+   Context variables:
+     title       - card heading, optional
+     description - one-line subtitle under the title, optional
+     body        - main content, string or |safe markup
+     footer      - secondary content row, optional
+     padded      - bool, default true; set false for media or table cards
+#}
+{% set _pad = "p-6" if padded is not defined or padded else "" %}
+<article class="rounded-lg border border-border bg-card text-card-foreground shadow-xs">
+  {% if title or description %}
+    <header class="space-y-1 border-b border-border p-6 pb-4">
+      {% if title %}
+        <h3 class="font-serif text-lg font-medium leading-none tracking-tight">
+          {{ title }}
+        </h3>
+      {% endif %}
+      {% if description %}
+        <p class="text-sm text-muted-foreground">{{ description }}</p>
+      {% endif %}
+    </header>
+  {% endif %}
+  {% if body %}
+    <div class="{{ _pad }} text-sm">{{ body|safe }}</div>
+  {% endif %}
+  {% if footer %}
+    <footer class="flex items-center justify-end gap-2 border-t border-border bg-muted/30 px-6 py-3 text-sm">
+      {{ footer|safe }}
+    </footer>
+  {% endif %}
+</article>

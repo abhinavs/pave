@@ -1,0 +1,39 @@
+# Pre-commit hooks for Pave.
+#
+# Two jobs that do not belong in a Fabric task because they rewrite files on
+# the way into a commit, not on demand:
+#
+#   1. sqlalchemy-annotate keeps the "== Schema Information" blocks in
+#      app/models/ in sync with Base.metadata.
+#   2. ruff fixes lint (import order included) and then formats.
+#
+# Hook order is deliberate and the tools converge in exactly one pass:
+# annotate writes a fresh schema block whose import spacing ruff's isort
+# would otherwise reject, `ruff --fix` settles that (I001), and
+# `ruff-format` lays out the final result. Running them in any other order
+# would leave the tree dirty after a "clean" commit.
+#
+# Install once per clone:  .venv/bin/pre-commit install
+# Run against everything:  .venv/bin/pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: sqlalchemy-annotate
+        name: sqlalchemy-annotate (schema comment blocks)
+        entry: sqlalchemy-annotate generate --models app.models --dialect postgresql
+        language: system
+        # The tool imports the models package and reads Base.metadata, so it
+        # needs the project environment, not a hook-managed venv. It takes a
+        # dotted package via --models, never file paths.
+        pass_filenames: false
+        files: ^app/models/.*\.py$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff
+        name: ruff (lint, autofix)
+        args: [--fix]
+      - id: ruff-format
+        name: ruff (format)

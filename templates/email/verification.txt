@@ -1,0 +1,9 @@
+Confirm your email
+
+Thanks for signing up for {{ app_name }}. Visit the link below to
+verify this email address and activate your account:
+
+{{ verify_url }}
+
+If you did not sign up for {{ app_name }}, you can safely ignore this
+message.

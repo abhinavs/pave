@@ -1,0 +1,14 @@
+{# Infinite scroll sentinel. Context: next_url (the next page's partial).
+   When this element scrolls into view htmx fetches next_url and inserts the
+   rows after it; the response should end with the next sentinel, or nothing
+   when the list is exhausted. #}
+{% if next_url %}
+<div
+  hx-get="{{ next_url }}"
+  hx-trigger="revealed"
+  hx-swap="afterend"
+  class="py-4 text-center text-xs text-[--text-secondary]"
+>
+  Loading more…
+</div>
+{% endif %}

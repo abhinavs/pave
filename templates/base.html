@@ -1,0 +1,262 @@
+<!doctype html>
+{# The data-theme attribute is set explicitly here so unstyled fallbacks
+   (no JS, no localStorage) still pick up a reasonable theme. The inline
+   boot script below overrides it before paint based on the stored
+   preference, so changing this default has no effect on a hydrated page. #}
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+
+    {# Apply the stored theme before any paint to avoid a flash of the
+       wrong background. Mirrors the logic in static/js/theme.js; keep
+       the two in sync. Pure ES5 so it works without parse hiccups. #}
+    <script>
+      (function () {
+        try {
+          var v = localStorage.getItem("pave-theme") || "system";
+          if (v !== "light" && v !== "dark" && v !== "system") v = "system";
+          var dark =
+            v === "dark" ||
+            (v === "system" &&
+              window.matchMedia &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.setAttribute(
+            "data-theme",
+            dark ? "dark" : "light"
+          );
+        } catch (e) {
+          // localStorage blocked - leave whatever the markup default is.
+        }
+      })();
+    </script>
+
+    <link rel="stylesheet" href="/static/css/app.css" />
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg" />
+    {% block head %}{% endblock %}
+  </head>
+  <body
+    hx-boost="true"
+    class="min-h-screen bg-background font-sans text-foreground antialiased"
+  >
+    {# Top nav. Alpine owns one piece of state, navOpen, which both the
+       hamburger button and the mobile drawer read. The drawer is its own
+       block under sm: so the desktop layout has zero hidden DOM. #}
+    {# Sticky header. Opaque by default (so it reads as a real surface,
+       not a ghost), and only goes translucent when the browser actually
+       supports backdrop-filter - and even then we sit at /95 so text
+       behind it never bleeds through. #}
+    <header
+      class="sticky top-0 z-40 border-b border-border bg-background supports-[backdrop-filter]:bg-background/95 supports-[backdrop-filter]:backdrop-blur"
+      x-data="{ navOpen: false }"
+      x-on:keydown.escape.window="navOpen = false"
+    >
+      <nav
+        class="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4 sm:px-6"
+      >
+        <a
+          href="/"
+          class="inline-flex items-center text-foreground transition-colors hover:text-primary"
+          aria-label="{{ app_name }} home"
+        >
+          {# Logo glyph only in the navbar: the user chip and the page chrome
+             already carry plenty of identity, and the wordmark next to it
+             read as visual ballast more than a brand cue. The auth layout
+             keeps the wordmark - that page has nothing else on it. #}
+          {% with label="" %}{% include "_components/logo.html" %}{% endwith %}
+        </a>
+
+        <div class="flex-1"></div>
+
+        {# Desktop-only inline actions. The theme toggle stays in every
+           breakpoint - it's a one-tap thing that doesn't belong behind
+           a menu. Auth chips collapse into the drawer under sm:. #}
+        {% if user %}
+          {# Header chip: avatar (or first-initial placeholder) plus the
+             name, linking to the account page. Sessions live one click in
+             from there. #}
+          <a
+            href="/account"
+            class="hidden items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+            title="Account"
+          >
+            <span class="inline-flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-[10px] font-medium text-muted-foreground">
+              {% if user.avatar_url %}
+                <img src="{{ user.avatar_url }}" alt="" class="h-full w-full object-cover"/>
+              {% else %}
+                {{ user.name[0] | upper }}
+              {% endif %}
+            </span>
+            <span>{{ user.name }}</span>
+          </a>
+        {% endif %}
+        {% include "_components/theme_toggle.html" %}
+        <div class="hidden items-center gap-2 sm:flex">
+          {% if user %}
+            <form action="/auth/logout" method="post" class="inline">
+              <button
+                type="submit"
+                class="inline-flex h-8 items-center rounded-md border border-border px-3 text-sm transition-colors hover:bg-accent"
+              >
+                Log out
+              </button>
+            </form>
+          {% else %}
+            <a
+              href="/auth/login"
+              class="inline-flex h-8 items-center rounded-md border border-border px-3 text-sm transition-colors hover:bg-accent"
+              >Log in</a
+            >
+            <a
+              href="/auth/signup"
+              class="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm text-primary-foreground transition-colors hover:bg-primary/90"
+              >Sign up</a
+            >
+          {% endif %}
+        </div>
+
+        {# Hamburger trigger. Hidden once the inline chips above fit. The
+           aria-expanded value is bound so screen readers track the
+           drawer state. #}
+        <button
+          type="button"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
+          @click="navOpen = !navOpen"
+          :aria-expanded="navOpen.toString()"
+          aria-controls="mobile-nav"
+          aria-label="Open menu"
+        >
+          <span x-show="!navOpen">
+            {% with name="list" %}{% include "_components/icon.html" %}{% endwith %}
+          </span>
+          <span x-show="navOpen" x-cloak>
+            {% with name="x" %}{% include "_components/icon.html" %}{% endwith %}
+          </span>
+        </button>
+      </nav>
+
+      {# Mobile drawer. Lives under the bar, slides into place. Closed by
+         default; closing via Esc, scrim click, or any link inside. #}
+      <div
+        id="mobile-nav"
+        x-show="navOpen"
+        x-cloak
+        x-transition.opacity.duration.100ms
+        class="border-t border-border bg-background sm:hidden"
+      >
+        <div class="mx-auto flex max-w-5xl flex-col gap-1 px-4 py-3 text-sm">
+          <a
+            href="/"
+            @click="navOpen = false"
+            class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+            >Home</a
+          >
+          <a
+            href="/components"
+            @click="navOpen = false"
+            class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+            >Components</a
+          >
+          <a
+            href="/blog"
+            @click="navOpen = false"
+            class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+            >Blog</a
+          >
+          {% if user %}
+            <a
+              href="/webhooks/"
+              @click="navOpen = false"
+              class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+              >Webhooks</a
+            >
+            <a
+              href="/account"
+              @click="navOpen = false"
+              class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+              >Account</a
+            >
+            <a
+              href="/auth/sessions"
+              @click="navOpen = false"
+              class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+              >Active sessions</a
+            >
+            <div class="mt-2 border-t border-border pt-2">
+              <p class="px-3 py-1 text-xs text-muted-foreground">
+                Signed in as {{ user.name }}
+              </p>
+              <form action="/auth/logout" method="post">
+                <button
+                  type="submit"
+                  class="w-full rounded-md px-3 py-2 text-left text-foreground transition-colors hover:bg-accent"
+                >
+                  Log out
+                </button>
+              </form>
+            </div>
+          {% else %}
+            <div class="mt-2 flex flex-col gap-2 border-t border-border pt-3">
+              <a
+                href="/auth/login"
+                @click="navOpen = false"
+                class="inline-flex h-9 items-center justify-center rounded-md border border-border px-3 text-foreground transition-colors hover:bg-accent"
+                >Log in</a
+              >
+              <a
+                href="/auth/signup"
+                @click="navOpen = false"
+                class="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-primary-foreground transition-colors hover:bg-primary/90"
+                >Sign up</a
+              >
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      {% block content %}{% endblock %}
+    </main>
+
+    {# Footer. Surfaces the markdown-driven pages (privacy / terms / about)
+       and the blog so they are reachable without typing the URL. Kept
+       small and quiet - it is signposting, not a marketing band. #}
+    <footer class="mt-16 border-t border-border">
+      <div
+        class="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6"
+      >
+        <p>&copy; {{ now().year }} {{ app_name }}</p>
+        <nav class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <a href="/about" class="transition-colors hover:text-foreground"
+            >About</a
+          >
+          <a href="/blog" class="transition-colors hover:text-foreground"
+            >Blog</a
+          >
+          <a href="/privacy" class="transition-colors hover:text-foreground"
+            >Privacy</a
+          >
+          <a href="/terms" class="transition-colors hover:text-foreground"
+            >Terms</a
+          >
+        </nav>
+      </div>
+    </footer>
+
+    <!-- HTMX and Alpine, version-pinned per AGENTS conventions -->
+    <script
+      src="https://unpkg.com/htmx.org@2.0.4"
+      integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+      crossorigin="anonymous"
+    ></script>
+    <script src="/static/js/theme.js"></script>
+    <script
+      defer
+      src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"
+    ></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,67 @@
+{# Shared layout for the error pages. Stays inside the regular base.html
+   so the user still sees the same header and footer they were one click
+   ago - reorientation matters when the page they asked for is gone.
+
+   Context variables (all prefixed so they do not leak into includes -
+   `title`, `message`, and `code` are common enough that an unprefixed
+   {% set %} at module scope ends up decorating every shared partial in
+   `base.html` with the wrong text):
+     _code     - integer status code, printed huge in the serif headline
+     _headline - one-line "what happened" headline
+     _message  - one or two sentences of friendly context
+     _actions  - optional list of {"href": "/", "label": "Home", "primary": True}
+                 that render as buttons under the message. When omitted, a
+                 "back to home" action is rendered. #}
+{% extends "base.html" %}
+{% set _actions = _actions if _actions is defined else [
+  {"href": "/", "label": "Back to home", "primary": True},
+] %}
+
+{% block content %}
+  <section class="mx-auto flex max-w-2xl flex-col items-start gap-6 py-16 sm:py-24">
+    {# The number is the visual anchor. We carry it in Newsreader at a
+       large size so the page reads as a deliberate composition rather
+       than a stack trace dressed up. The muted-foreground variant keeps
+       it from screaming on dark mode. #}
+    <p class="font-serif text-7xl font-medium leading-none tracking-tight text-muted-foreground sm:text-8xl">
+      {{ _code }}
+    </p>
+
+    <div class="space-y-3">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+        {{ _headline }}
+      </h1>
+      <p class="max-w-xl text-base text-muted-foreground">
+        {{ _message }}
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 pt-2">
+      {% for action in _actions %}
+        {% if action.primary %}
+          <a
+            href="{{ action.href }}"
+            class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >{{ action.label }}</a
+          >
+        {% else %}
+          <a
+            href="{{ action.href }}"
+            class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
+            >{{ action.label }}</a
+          >
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {# Tiny request-id chip, only rendered if the handler put one in
+       context. Helps a user paste something into a support ticket without
+       overwhelming the page when there is nothing useful to show. #}
+    {% if request_id %}
+      <p class="pt-6 text-xs text-muted-foreground">
+        Reference:
+        <code class="font-mono text-xs">{{ request_id }}</code>
+      </p>
+    {% endif %}
+  </section>
+{% endblock %}

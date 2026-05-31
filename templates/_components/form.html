@@ -1,0 +1,31 @@
+{# Form with inline errors. Context: action, fields (list of
+   {name,label,type,value}), errors (dict name->message), submit_label.
+   On HTMX validation failure the route re-renders this with errors and a
+   200 status so HTMX swaps it back in. #}
+<form action="{{ action }}" method="post" class="space-y-4">
+  {% for field in fields %}
+  <div class="space-y-1">
+    <label
+      for="{{ field.name }}"
+      class="block text-xs font-medium text-[--text-secondary]"
+      >{{ field.label }}</label
+    >
+    <input
+      id="{{ field.name }}"
+      name="{{ field.name }}"
+      type="{{ field.type | default('text') }}"
+      value="{{ field.value | default('') }}"
+      class="h-8 w-full rounded-sm border border-[--border-muted] bg-[--bg-surface] px-3 py-1.5 text-sm text-[--text-primary]"
+    />
+    {% if errors and field.name in errors %}
+    <p class="text-xs text-error">{{ errors[field.name] }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <button
+    type="submit"
+    class="rounded-sm bg-primary-500 px-3 py-1.5 text-sm text-white hover:bg-primary-600"
+  >
+    {{ submit_label | default('Submit') }}
+  </button>
+</form>

@@ -1,0 +1,42 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Set a new password - {{ app_name }}{% endblock %}
+{% block brand_heading %}One step from done.{% endblock %}
+
+{% block auth_content %}
+  <div class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Set a new password
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        Pick something memorable. At least 8 characters.
+      </p>
+    </header>
+
+    <form action="/auth/reset" method="post" class="space-y-5">
+      {# The token round-trips through a hidden input so the POST handler
+         can validate single-use and password-fingerprint constraints. #}
+      <input type="hidden" name="token" value="{{ token }}" />
+
+      {% with name="password", label="New password", type="password", required=True, minlength=8, autocomplete="new-password", autofocus=True %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with name="confirm_password", label="Confirm new password", type="password", required=True, minlength=8, autocomplete="new-password" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with label="Update password", size="full" %}
+        {% include "_components/button.html" %}
+      {% endwith %}
+    </form>
+
+    <p class="text-center text-sm text-muted-foreground">
+      <a
+        href="/auth/login"
+        class="underline underline-offset-4 hover:text-foreground"
+        >Back to sign in</a
+      >
+    </p>
+  </div>
+{% endblock %}

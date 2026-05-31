@@ -1,0 +1,30 @@
+{# Badge. A small inline pill for status, counts, or category tags.
+   Six tonal variants - the muted neutral is the default because it
+   sits next to other text without shouting.
+
+   Context variables:
+     label    - visible text (required)
+     variant  - "neutral" | "primary" | "secondary" | "success" |
+                "warning" | "destructive"
+     icon     - optional icon name from the icon partial; renders to
+                the left of the label at h-3 w-3
+#}
+{% set _variant = variant|default("neutral") %}
+{% set _styles = {
+  "neutral": "bg-muted text-muted-foreground border-transparent",
+  "primary": "bg-primary/10 text-primary border-primary/20",
+  "secondary": "bg-secondary-500/10 text-secondary-700 dark:text-secondary-300 border-secondary-500/20",
+  "success": "bg-success/10 text-success border-success/20",
+  "warning": "bg-warning/10 text-warning border-warning/20",
+  "destructive": "bg-destructive/10 text-destructive border-destructive/20",
+} %}
+<span
+  class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium {{ _styles[_variant] }}"
+>
+  {% if icon %}
+    {% with name=icon, class="h-3 w-3" %}
+      {% include "_components/icon.html" %}
+    {% endwith %}
+  {% endif %}
+  {{ label }}
+</span>

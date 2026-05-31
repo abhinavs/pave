@@ -1,0 +1,13 @@
+{# Destructive action with a confirm step. Context: action, label, message.
+   Uses the destructive button variant and htmx's hx-confirm. Posting (not a
+   bare link) keeps it safe against prefetch. #}
+<form action="{{ action }}" method="post" class="inline">
+  <button
+    type="submit"
+    hx-post="{{ action }}"
+    hx-confirm="{{ message }}"
+    class="rounded-sm border border-error/30 px-3 py-1.5 text-sm text-error hover:bg-error/10"
+  >
+    {{ label }}
+  </button>
+</form>

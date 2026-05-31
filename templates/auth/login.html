@@ -1,0 +1,73 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Sign in - {{ app_name }}{% endblock %}
+{% block brand_heading %}Welcome back.{% endblock %}
+
+{% block auth_content %}
+  <div class="space-y-8">
+    <header class="space-y-2">
+      <h1 class="font-serif text-3xl font-medium tracking-tight text-foreground">
+        Welcome back
+      </h1>
+      <p class="text-sm text-muted-foreground">
+        New here?
+        <a
+          href="/auth/signup"
+          class="font-medium text-link underline-offset-4 hover:underline"
+          >Create an account</a
+        >
+      </p>
+    </header>
+
+    {% with verb = "Continue with" %}
+      {% include "auth/_oauth_buttons.html" %}
+    {% endwith %}
+
+    {% with label = "or sign in with email" %}
+      {% include "_components/divider.html" %}
+    {% endwith %}
+
+    {# Login errors land here via redirect; auth.py maps the ?error= code
+       to a friendly title before render. #}
+    {% if error %}
+      {% with title = error, variant = "destructive" %}
+        {% include "_components/alert.html" %}
+      {% endwith %}
+    {% endif %}
+
+    <form action="/auth/login" method="post" class="space-y-5">
+      {% with name="email", label="Email", type="email", required=True, autofocus=True, placeholder="you@example.com" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      {% with name="password", label="Password", type="password", required=True, autocomplete="current-password" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+
+      <div class="flex items-center justify-between text-sm">
+        <label
+          class="flex cursor-pointer select-none items-center gap-2 text-muted-foreground hover:text-foreground"
+        >
+          {# Hidden+checkbox pair guarantees the POST always carries a value:
+             false when unchecked, true when checked (the checkbox wins). #}
+          <input type="hidden" name="remember_me" value="false" />
+          <input
+            type="checkbox"
+            name="remember_me"
+            value="true"
+            class="h-4 w-4 shrink-0 rounded border border-input text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          Keep me signed in
+        </label>
+        <a
+          href="/auth/forgot"
+          class="font-medium text-link underline-offset-4 hover:underline"
+          >Forgot your password?</a
+        >
+      </div>
+
+      {% with label="Sign in", size="full" %}
+        {% include "_components/button.html" %}
+      {% endwith %}
+    </form>
+  </div>
+{% endblock %}

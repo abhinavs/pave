@@ -1,0 +1,50 @@
+{# Checkbox. Real native input wrapped in a label so the entire row is
+   clickable. The check glyph is the Phosphor "check" icon revealed by
+   a peer-checked rule, which means no Alpine state is needed for the
+   pure on/off case.
+
+   The hidden+real pair pattern (matching login's remember-me) is left
+   to the caller to add when the form must always carry a value.
+
+   Context variables:
+     name     - form name and input id (required)
+     label    - visible label text (required)
+     checked  - bool, pre-selects the box
+     value    - submitted value when checked, default "true"
+     help     - small helper text under the row
+     required - bool
+#}
+<label
+  for="{{ name }}"
+  class="group flex cursor-pointer select-none items-start gap-3 text-sm"
+>
+  <span class="relative mt-0.5 flex h-4 w-4 shrink-0">
+    <input
+      type="checkbox"
+      id="{{ name }}"
+      name="{{ name }}"
+      value="{{ value|default('true') }}"
+      {% if checked %}checked{% endif %}
+      {% if required %}required{% endif %}
+      class="peer h-4 w-4 cursor-pointer appearance-none rounded-sm border border-input bg-background transition-colors checked:border-primary checked:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0"
+    />
+    {# Check glyph drawn on top, only visible when peer is checked. #}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      class="pointer-events-none absolute inset-0 hidden h-4 w-4 text-primary-foreground peer-checked:block"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/>
+    </svg>
+  </span>
+  <span class="flex-1 space-y-0.5">
+    <span class="block leading-tight text-foreground">
+      {{ label }}{% if required %}<span class="ml-0.5 text-destructive" aria-hidden="true">*</span>{% endif %}
+    </span>
+    {% if help %}
+      <span class="block text-xs text-muted-foreground">{{ help }}</span>
+    {% endif %}
+  </span>
+</label>

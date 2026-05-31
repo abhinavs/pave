@@ -1,0 +1,63 @@
+{# Dropdown menu. A trigger button + an Alpine-controlled menu panel.
+   The menu items are passed in via the `items` list. Each item is
+   either a regular link (href) or a destructive action (destructive=True).
+
+   For more complex menus (icons, sections, dividers) compose the trigger
+   button yourself and copy the panel chrome from this file - the
+   {% with %}{% include %} ceiling is fine for the common case.
+
+   Context variables:
+     label    - visible text on the trigger button (required)
+     items    - list of {"label": str, "href": str, "destructive"?: bool,
+                          "icon"?: str}
+     align    - "left" (default) | "right" - menu anchor edge
+     variant  - button variant, default "outline"
+#}
+{% set _align = align|default("left") %}
+{% set _variant = variant|default("outline") %}
+{% set _trigger_styles = {
+  "primary": "bg-primary text-primary-foreground hover:bg-primary/90",
+  "secondary": "bg-surface-muted text-foreground hover:bg-accent border border-border",
+  "outline": "border border-input bg-background text-foreground hover:bg-accent",
+  "ghost": "text-foreground hover:bg-accent",
+} %}
+<div x-data="{ open: false }" class="relative inline-block">
+  <button
+    type="button"
+    @click="open = !open"
+    @click.outside="open = false"
+    :aria-expanded="open.toString()"
+    aria-haspopup="menu"
+    class="inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {{ _trigger_styles[_variant] }}"
+  >
+    <span>{{ label }}</span>
+    {% with name="caret-down", class="h-3.5 w-3.5" %}
+      {% include "_components/icon.html" %}
+    {% endwith %}
+  </button>
+  <div
+    x-show="open"
+    x-cloak
+    x-transition.opacity.duration.100ms
+    role="menu"
+    class="absolute z-30 mt-2 min-w-[10rem] overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md {% if _align == 'right' %}right-0{% else %}left-0{% endif %}"
+  >
+    {% for item in items %}
+      <a
+        href="{{ item.href }}"
+        role="menuitem"
+        @click="open = false"
+        class="flex items-center gap-2 px-3 py-2 text-sm transition-colors
+          {% if item.destructive %}text-destructive hover:bg-destructive/10
+          {% else %}text-foreground hover:bg-accent hover:text-accent-foreground{% endif %}"
+      >
+        {% if item.icon %}
+          {% with name=item.icon, class="h-3.5 w-3.5" %}
+            {% include "_components/icon.html" %}
+          {% endwith %}
+        {% endif %}
+        <span>{{ item.label }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</div>

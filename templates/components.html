@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% block title %}Components - {{ app_name }}{% endblock %}
+
+{% block content %}
+  {# A flat, scrollable reference. Each section shows one component in every
+     variant a template might reach for. Source files are listed inline so
+     "see the code" never needs more than a glance at the path. #}
+  <header class="space-y-3 pb-10">
+    <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+      Design system
+    </p>
+    <h1 class="font-serif text-4xl font-medium tracking-tight text-foreground">
+      Components
+    </h1>
+    <p class="max-w-2xl text-sm text-muted-foreground">
+      Every shared partial Pave ships, in every variant. Toggle the theme in
+      the header to see how each one behaves in light and dark.
+    </p>
+  </header>
+
+  <nav class="mb-12 flex flex-wrap gap-x-4 gap-y-2 border-y border-border py-3 text-sm text-muted-foreground">
+    {% for item in [
+      ("colors", "Colors"),
+      ("typography", "Typography"),
+      ("icons", "Icons"),
+      ("buttons", "Buttons"),
+      ("badges", "Badges"),
+      ("inputs", "Inputs"),
+      ("checkboxes", "Checkboxes"),
+      ("switches", "Switches"),
+      ("alerts", "Alerts"),
+      ("cards", "Cards"),
+      ("tabs", "Tabs"),
+      ("dropdowns", "Dropdowns"),
+      ("empty-state", "Empty state"),
+      ("dividers", "Dividers"),
+      ("logo", "Logo"),
+    ] %}
+      <a href="#{{ item[0] }}" class="hover:text-foreground">{{ item[1] }}</a>
+    {% endfor %}
+  </nav>
+
+  {# A tiny inline macro-equivalent: wrap each section in a consistent shell
+     so they all read the same. We avoid Jinja macros per repo convention,
+     so this is just a {% with %}-friendly include. #}
+
+  {# ------------------------------------------------------------------ #}
+  <section id="colors" class="space-y-6 py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Colors</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Three tiers. Primary drives action, secondary supports structure,
+        tertiary backs neutral surface. <code class="font-mono text-xs">static/css/source.css</code>
+      </p>
+    </div>
+
+    {# One compact ramp per tier. Eleven swatches in a row, no per-step
+       captions; the step labels live in a hover tooltip via title= so
+       the inspector path still works without cluttering the gallery. #}
+    <div class="space-y-3">
+      {% for tier in [
+        {"name": "Primary", "prefix": "primary"},
+        {"name": "Secondary", "prefix": "secondary"},
+        {"name": "Tertiary", "prefix": "tertiary"},
+      ] %}
+        <div class="flex items-center gap-4">
+          <p class="w-20 shrink-0 text-xs font-medium text-muted-foreground">
+            {{ tier.name }}
+          </p>
+          <div class="flex h-6 flex-1 overflow-hidden rounded-md ring-1 ring-inset ring-border">
+            {% for step in [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] %}
+              <div
+                class="flex-1 bg-{{ tier.prefix }}-{{ step }}"
+                title="{{ tier.prefix }}-{{ step }}"
+              ></div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      {% for name, cls in [
+        ("info", "bg-info"),
+        ("success", "bg-success"),
+        ("warning", "bg-warning"),
+        ("destructive", "bg-destructive"),
+      ] %}
+        <span class="inline-flex items-center gap-2 rounded-md border border-border px-2 py-1 text-xs">
+          <span class="h-3 w-3 rounded-sm {{ cls }}"></span>
+          <span class="font-mono text-muted-foreground">{{ name }}</span>
+        </span>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="typography" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Typography</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Three families, all self-hosted. Inter for UI, Newsreader for display,
+        IBM Plex Mono for code.
+      </p>
+    </div>
+    <div class="grid gap-6 sm:grid-cols-3">
+      <div class="space-y-1">
+        <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground">Sans (Inter)</p>
+        <p class="font-sans text-2xl">Aa Bb Cc 1 2 3</p>
+        <p class="font-sans text-sm text-muted-foreground">The quick brown fox jumps over the lazy dog.</p>
+      </div>
+      <div class="space-y-1">
+        <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground">Serif (Newsreader)</p>
+        <p class="font-serif text-2xl">Aa Bb Cc 1 2 3</p>
+        <p class="font-serif text-sm text-muted-foreground">The quick brown fox jumps over the lazy dog.</p>
+      </div>
+      <div class="space-y-1">
+        <p class="font-mono text-xs uppercase tracking-wider text-muted-foreground">Mono (IBM Plex)</p>
+        <p class="font-mono text-2xl">Aa Bb Cc 1 2 3</p>
+        <p class="font-mono text-sm text-muted-foreground">async def fetch(url): ...</p>
+      </div>
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="icons" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Icons</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Phosphor regular, inlined per use. Add a new arm to the partial
+        when you need one. <code class="font-mono text-xs">templates/_components/icon.html</code>
+      </p>
+    </div>
+    <div class="grid grid-cols-4 gap-3 sm:grid-cols-6 lg:grid-cols-8">
+      {% for n in [
+        "sun", "moon", "monitor", "list", "x", "check",
+        "check-circle", "x-circle", "warning", "info",
+        "caret-down", "caret-right", "caret-up", "arrow-right",
+        "arrow-up-right", "plus", "minus", "magnifying-glass",
+        "user", "gear", "envelope", "lock",
+        "eye", "eye-slash", "trash", "copy", "pencil",
+        "spinner", "dots-three", "sparkle",
+      ] %}
+        <div class="flex flex-col items-center gap-2 rounded-md border border-border bg-card p-3">
+          {% with name=n, class="h-5 w-5 text-foreground" %}
+            {% include "_components/icon.html" %}
+          {% endwith %}
+          <p class="font-mono text-[10px] text-muted-foreground">{{ n }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="buttons" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Buttons</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Five variants. Four sizes. <code class="font-mono text-xs">templates/_components/button.html</code>
+      </p>
+    </div>
+
+    <div class="space-y-4">
+      <p class="text-sm font-medium text-foreground">Variants</p>
+      <div class="flex flex-wrap items-center gap-3">
+        {% for v in ["primary", "secondary", "outline", "ghost", "destructive"] %}
+          {% with label=v|capitalize, variant=v, type="button" %}
+            {% include "_components/button.html" %}
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <p class="text-sm font-medium text-foreground">Sizes</p>
+      <div class="flex flex-wrap items-center gap-3">
+        {% for s in ["sm", "md", "lg"] %}
+          {% with label="Size " + s, size=s, type="button" %}
+            {% include "_components/button.html" %}
+          {% endwith %}
+        {% endfor %}
+      </div>
+      <div class="max-w-sm">
+        {% with label="Full width", size="full", type="button" %}
+          {% include "_components/button.html" %}
+        {% endwith %}
+      </div>
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="badges" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Badges</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Status pills and category tags. Six tonal variants, optional leading icon.
+        <code class="font-mono text-xs">templates/_components/badge.html</code>
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% for v in ["neutral", "primary", "secondary", "success", "warning", "destructive"] %}
+        {% with label=v|capitalize, variant=v %}
+          {% include "_components/badge.html" %}
+        {% endwith %}
+      {% endfor %}
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      {% with label="3 new", variant="primary", icon="sparkle" %}
+        {% include "_components/badge.html" %}
+      {% endwith %}
+      {% with label="Verified", variant="success", icon="check-circle" %}
+        {% include "_components/badge.html" %}
+      {% endwith %}
+      {% with label="Expiring soon", variant="warning", icon="warning" %}
+        {% include "_components/badge.html" %}
+      {% endwith %}
+      {% with label="Locked", variant="destructive", icon="lock" %}
+        {% include "_components/badge.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="inputs" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Inputs</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Label + field + optional help + optional error, in one include.
+        <code class="font-mono text-xs">templates/_components/input.html</code>
+      </p>
+    </div>
+    <div class="grid gap-6 sm:grid-cols-2">
+      {% with name="g_email", label="Email", type="email", required=True, placeholder="you@example.com" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+      {% with name="g_password", label="Password", type="password", required=True, minlength=8, help="At least 8 characters." %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+      {% with name="g_text", label="Display name", placeholder="Ada Lovelace" %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+      {% with name="g_error", label="Token", value="bad-token", error="Token is invalid or expired." %}
+        {% include "_components/input.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="checkboxes" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Checkboxes</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Native input + label, glyph drawn by CSS. No Alpine needed for the
+        on/off case. <code class="font-mono text-xs">templates/_components/checkbox.html</code>
+      </p>
+    </div>
+    <div class="max-w-md space-y-4">
+      {% with name="g_terms", label="I agree to the terms.", required=True %}
+        {% include "_components/checkbox.html" %}
+      {% endwith %}
+      {% with name="g_news", label="Send me product updates.", checked=True, help="One email per release, never anything else." %}
+        {% include "_components/checkbox.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="switches" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Switches</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Settings-style on/off control. Submits like a checkbox.
+        <code class="font-mono text-xs">templates/_components/switch.html</code>
+      </p>
+    </div>
+    <div class="max-w-md space-y-5 rounded-lg border border-border bg-card p-5">
+      {% with name="g_2fa", label="Two-factor authentication", checked=True, help="Required on every sign-in." %}
+        {% include "_components/switch.html" %}
+      {% endwith %}
+      {% with name="g_beta", label="Beta features", help="Pre-release surfaces, may break." %}
+        {% include "_components/switch.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="alerts" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Alerts</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Four variants. Icon, title, optional body.
+        <code class="font-mono text-xs">templates/_components/alert.html</code>
+      </p>
+    </div>
+    <div class="space-y-3">
+      {% with variant="info", title="Heads up.", body="This is the info variant. Use it sparingly." %}
+        {% include "_components/alert.html" %}
+      {% endwith %}
+      {% with variant="success", title="Saved.", body="Your changes are live." %}
+        {% include "_components/alert.html" %}
+      {% endwith %}
+      {% with variant="warning", title="Take a look.", body="Something might need attention soon." %}
+        {% include "_components/alert.html" %}
+      {% endwith %}
+      {% with variant="destructive", title="Something went wrong.", body="We could not complete the request. Try again." %}
+        {% include "_components/alert.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="cards" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Cards</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Bordered surface with optional header and footer.
+        <code class="font-mono text-xs">templates/_components/card.html</code>
+      </p>
+    </div>
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% with
+        title="API token",
+        description="Long-lived. Rotate every 90 days.",
+        body="<p class='text-muted-foreground'>Last used 2 days ago from 192.0.2.10.</p>",
+        footer="<button type='button' class='inline-flex h-8 items-center rounded-md border border-border px-3 text-xs hover:bg-accent'>Rotate</button>"
+      %}
+        {% include "_components/card.html" %}
+      {% endwith %}
+      {% with
+        title="Billing",
+        description="Current cycle, ending May 31.",
+        body="<dl class='grid grid-cols-2 gap-y-2 text-sm'><dt class='text-muted-foreground'>Plan</dt><dd>Team</dd><dt class='text-muted-foreground'>Seats</dt><dd>12 of 25</dd></dl>"
+      %}
+        {% include "_components/card.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="tabs" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Tabs</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Link mode for route-per-tab, Alpine mode for in-page panel switching.
+        <code class="font-mono text-xs">templates/_components/tabs.html</code>
+      </p>
+    </div>
+    <div class="space-y-3">
+      <p class="text-sm font-medium text-foreground">Link mode</p>
+      {% with items=[
+        {"label": "Overview", "href": "#tabs", "active": True},
+        {"label": "Usage", "href": "#tabs"},
+        {"label": "Settings", "href": "#tabs"},
+      ] %}
+        {% include "_components/tabs.html" %}
+      {% endwith %}
+    </div>
+    <div class="space-y-3" x-data="{ tab: 'preview' }">
+      <p class="text-sm font-medium text-foreground">Alpine mode</p>
+      {% with mode="alpine", alpine_var="tab", items=[
+        {"label": "Preview", "value": "preview"},
+        {"label": "Code", "value": "code"},
+        {"label": "Diff", "value": "diff"},
+      ] %}
+        {% include "_components/tabs.html" %}
+      {% endwith %}
+      <div class="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
+        <p x-show="tab === 'preview'">Showing preview.</p>
+        <p x-show="tab === 'code'" x-cloak>Showing code.</p>
+        <p x-show="tab === 'diff'" x-cloak>Showing diff.</p>
+      </div>
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="dropdowns" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Dropdowns</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Trigger plus menu, Alpine-controlled. Items can be destructive or
+        carry an icon. <code class="font-mono text-xs">templates/_components/dropdown.html</code>
+      </p>
+    </div>
+    <div class="flex flex-wrap items-start gap-3">
+      {% with label="Actions", items=[
+        {"label": "View", "href": "#dropdowns", "icon": "eye"},
+        {"label": "Duplicate", "href": "#dropdowns", "icon": "copy"},
+        {"label": "Edit", "href": "#dropdowns", "icon": "pencil"},
+        {"label": "Delete", "href": "#dropdowns", "icon": "trash", "destructive": True},
+      ] %}
+        {% include "_components/dropdown.html" %}
+      {% endwith %}
+      {% with label="New", variant="primary", align="right", items=[
+        {"label": "Webhook", "href": "#dropdowns"},
+        {"label": "API token", "href": "#dropdowns"},
+        {"label": "Team member", "href": "#dropdowns"},
+      ] %}
+        {% include "_components/dropdown.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="empty-state" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Empty state</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        The "nothing here yet" placeholder. Always pairs explanation with
+        a next step. <code class="font-mono text-xs">templates/_components/empty_state.html</code>
+      </p>
+    </div>
+    {% with
+      icon="envelope",
+      title="No messages yet",
+      description="When a webhook fires, the event lands here. Wire one up to see it stream in.",
+      action_href="/webhooks/",
+      action_label="Set up a webhook"
+    %}
+      {% include "_components/empty_state.html" %}
+    {% endwith %}
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="dividers" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Dividers</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Plain hairline, or with a centred uppercase label.
+        <code class="font-mono text-xs">templates/_components/divider.html</code>
+      </p>
+    </div>
+    <div class="max-w-md space-y-6">
+      {% include "_components/divider.html" %}
+      {% with label="or with email" %}
+        {% include "_components/divider.html" %}
+      {% endwith %}
+    </div>
+  </section>
+
+  {# ------------------------------------------------------------------ #}
+  <section id="logo" class="space-y-6 border-t border-border py-8">
+    <div>
+      <h2 class="font-serif text-2xl font-medium tracking-tight">Logo</h2>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Inherits text colour via currentColor.
+        <code class="font-mono text-xs">templates/_components/logo.html</code>
+      </p>
+    </div>
+    <div class="flex flex-wrap items-end gap-8">
+      {% with size="sm" %}{% include "_components/logo.html" %}{% endwith %}
+      {% with size="md" %}{% include "_components/logo.html" %}{% endwith %}
+      {% with size="lg" %}{% include "_components/logo.html" %}{% endwith %}
+      {% with size="lg", label="" %}{% include "_components/logo.html" %}{% endwith %}
+    </div>
+  </section>
+{% endblock %}

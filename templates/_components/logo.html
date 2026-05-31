@@ -1,0 +1,36 @@
+{# Logo wordmark. Inlines the A-frame mark so it inherits text colour (so
+   it reads in both light and dark) and lets the chrome around it stay
+   consistent with the rest of the type.
+
+   Context variables:
+     size    - "sm" | "md" (default) | "lg" - controls glyph height + label size
+     label   - text shown next to the mark. Falls back to app_name. Pass an
+               empty string to render the mark alone.
+     class   - extra utility classes appended to the wrapper, e.g. for colour.
+#}
+{% set _size = size|default("md") %}
+{# Wordmark sits lowercase and bold in mono - "pave" reads like a CLI prompt,
+   which matches what the project is. The glyph keeps its sentence-case
+   currentColor; only the text is lowercased. #}
+{% set _label = label if label is defined else app_name %}
+{% set _glyph = {"sm": "h-5 w-5", "md": "h-6 w-6", "lg": "h-8 w-8"}[_size] %}
+{% set _text = {"sm": "text-sm", "md": "text-base", "lg": "text-lg"}[_size] %}
+<span class="inline-flex items-center gap-2 {{ class|default('') }}">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 256 256"
+    class="{{ _glyph }} text-primary"
+    aria-hidden="true"
+  >
+    <polygon points="232 192 160 64 96 64 24 192 232 192" opacity="0.2" fill="currentColor"/>
+    <line x1="96" y1="64" x2="24" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+    <line x1="160" y1="64" x2="232" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+    <line x1="128" y1="64" x2="128" y2="80" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+    <line x1="128" y1="120" x2="128" y2="136" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+    <line x1="128" y1="176" x2="128" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+    <line x1="24" y1="64" x2="232" y2="64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+  </svg>
+  {% if _label %}
+    <span class="font-mono font-semibold lowercase tracking-tight {{ _text }}">{{ _label }}</span>
+  {% endif %}
+</span>
