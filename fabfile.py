@@ -153,9 +153,13 @@ def deploy(c):
     conn.run(f"mkdir -p {release_path}")
     # Honour .gitignore so local .env secrets, the dev sqlite db, and tool
     # caches never ship; --delete keeps a reused release dir from carrying
-    # stale files. The built static/css/app.css is tracked, so it still ships.
+    # stale files. static/css/app.css is a gitignored build artifact that
+    # validate just rebuilt, so force-include it (the include rule sits ahead
+    # of the .gitignore filter, and first match wins) - the server has no
+    # Tailwind to build it.
     c.run(
-        f"rsync -az --filter=':- .gitignore' --exclude .git --delete ./ "
+        f"rsync -az --filter='+ /static/css/app.css' --filter=':- .gitignore' "
+        f"--exclude .git --delete ./ "
         f"{DEPLOY_USER}@{t['host']}:{release_path}/"
     )
     with conn.cd(release_path):

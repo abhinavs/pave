@@ -24,6 +24,12 @@ pave.db-journal
 # Tailwind standalone binary (downloaded by fab setup-local)
 bin/tailwindcss
 
+# Compiled CSS: a build artifact of static/css/source.css. Built by `pave dev`
+# locally and by `fab validate` / CI before deploy, then force-included in the
+# deploy rsync. Not tracked, so the dev (unminified) and prod (minified) builds
+# never drift in git.
+static/css/app.css
+
 # User uploads (avatars and anything else the AvatarStorage points at)
 static/uploads/
 

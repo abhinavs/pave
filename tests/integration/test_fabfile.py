@@ -104,6 +104,10 @@ def test_deploy_ships_a_clean_tree_not_the_working_dir() -> None:
     # --delete so a reused release dir cannot carry stale files.
     assert ".gitignore" in src
     assert "--delete" in src
+    # app.css is a gitignored build artifact; validate builds it fresh, so the
+    # rsync must force-include it (ahead of the .gitignore filter) or the
+    # server, which has no Tailwind, would ship with no CSS.
+    assert "+ /static/css/app.css" in src
 
 
 def test_deploy_runs_validate_before_any_ssh() -> None:
