@@ -78,6 +78,7 @@ jobs:
       # the deploy. Uses the Tailwind v3 standalone binary (no Node toolchain).
       - name: Build CSS (tailwind)
         run: |
+          mkdir -p bin
           curl -fsSL -o bin/tailwindcss \
             https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-linux-x64
           chmod +x bin/tailwindcss

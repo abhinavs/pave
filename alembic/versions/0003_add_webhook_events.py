@@ -41,13 +41,9 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_webhook_events_slug"), "webhook_events", ["slug"]
-    )
+    op.create_index(op.f("ix_webhook_events_slug"), "webhook_events", ["slug"])
 
 
 def downgrade() -> None:
-    op.drop_index(
-        op.f("ix_webhook_events_slug"), table_name="webhook_events"
-    )
+    op.drop_index(op.f("ix_webhook_events_slug"), table_name="webhook_events")
     op.drop_table("webhook_events")

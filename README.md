@@ -1,16 +1,25 @@
 # Pave
 
-A production FastAPI template you deploy with SSH. No Docker. No Kubernetes. No Node build step. Start on one Ubuntu box, add more when you need to.
+> **Production FastAPI, paved.** You write the app. Pave ships it to a real Linux box with one SSH command. No Docker, no Kubernetes, no Node build step.
 
-You write FastAPI. Pave handles the rest: auth, background jobs, a markdown content system, HTMX components, and a deploy pipeline with health checks and automatic rollback. The boring production glue (Nginx, systemd, Gunicorn, Alembic) is wired up correctly the first time.
+<p align="center">
+  <a href="https://github.com/abhinavs/pave/actions/workflows/ci.yml"><img src="https://github.com/abhinavs/pave/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/python-3.12%2B-3776ab" alt="Python 3.12+" />
+  <img src="https://img.shields.io/badge/license-MIT-22c55e" alt="MIT license" />
+  <img src="https://img.shields.io/badge/deploy-SSH%20%2B%20systemd-7c3aed" alt="Deploy: SSH + systemd" />
+</p>
 
-The name carries the idea. You pave the path before you walk it. Pave lays the production surface first, then you build on it.
+Start on one Ubuntu box. Add more when you need them.
+
+You write FastAPI. Pave handles everything around it: auth, background jobs, a markdown content system, an HTMX component kit, and a deploy pipeline with health checks and automatic rollback. The boring production glue (Nginx, systemd, Gunicorn, Alembic) is wired up correctly the first time, so you never have to.
+
+The name carries the idea. You pave a path before you walk it. Pave lays the production surface first, then you build on top.
 
 ---
 
 ## Quickstart
 
-From a clean clone to a running app on your laptop:
+From a clean clone to a running app on your laptop, four lines:
 
 ```bash
 git clone https://github.com/abhinavs/pave && cd pave
@@ -19,11 +28,31 @@ pip install -r requirements.txt -r requirements-dev.txt && pip install -e .
 cp .env.example .env && pave setup && pave dev
 ```
 
-Open http://127.0.0.1:8000.
+Then open http://127.0.0.1:6161 and you are looking at the screens below.
 
 > No Postgres on your machine? Set `USE_SQLITE=true` in `.env` and re-run `pave setup`. Everything works against SQLite for local dev.
 
-![Pave running](docs/pave_screenshot.png)
+## Screenshots
+
+<p align="center">
+  <img src="docs/pave_screenshot.png" width="100%" alt="Pave landing page, dark theme" />
+</p>
+
+<p align="center">
+  <img src="docs/pave_screenshot_light.png" width="100%" alt="Pave landing page, light theme" />
+</p>
+
+<p align="center"><sub>Dark by default, with a complete light theme. Every component traces back to one set of design tokens, no freelance colors.</sub></p>
+
+<br />
+
+<p align="center">
+  <img src="docs/pave_mobile_dark.png" width="38%" alt="Pave on mobile, dark theme" />
+  &nbsp;&nbsp;
+  <img src="docs/pave_mobile_light.png" width="38%" alt="Pave on mobile, light theme" />
+</p>
+
+<p align="center"><sub>Responsive down to a phone, both themes. Same templates, no separate mobile build.</sub></p>
 
 ---
 
@@ -45,7 +74,7 @@ Need more than one server? Fabric's host lists work as expected. The same `fab p
 
 ## What you get
 
-Each item below is a thing you would otherwise spend a week wiring up.
+Every row below is something you would otherwise spend a week wiring up by hand.
 
 | You want to                                            | Pave gives you                                                                                                                                       |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |

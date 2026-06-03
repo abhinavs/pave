@@ -14,9 +14,9 @@
   function readPref() {
     try {
       const v = localStorage.getItem(KEY);
-      return VALUES.includes(v) ? v : "system";
+      return VALUES.includes(v) ? v : "dark";
     } catch {
-      return "system";
+      return "dark";
     }
   }
 

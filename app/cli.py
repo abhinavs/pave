@@ -56,12 +56,69 @@ def _run(*args: str) -> None:
         raise typer.Exit(code=result.returncode)
 
 
+# --- tailwind --------------------------------------------------------------
+
+# Keep this version in step with TAILWIND_VERSION in fabfile.py, which downloads
+# the same pinned binary onto the server at deploy time.
+_TAILWIND_VERSION = "v3.4.17"
+
+
+def _tailwind_asset() -> str:
+    """The release asset name for the current OS and architecture.
+
+    Tailwind ships a standalone binary per platform; pick the right one so a
+    fresh clone works on macOS (Intel or Apple Silicon) and Linux alike.
+    """
+    import platform
+
+    system = platform.system()
+    machine = platform.machine().lower()
+    arm = machine in ("arm64", "aarch64")
+    if system == "Darwin":
+        return "tailwindcss-macos-arm64" if arm else "tailwindcss-macos-x64"
+    if system == "Linux":
+        return "tailwindcss-linux-arm64" if arm else "tailwindcss-linux-x64"
+    # Windows is not a supported dev platform for the standalone binary.
+    typer.echo(f"Unsupported platform for Tailwind binary: {system} {machine}")
+    raise typer.Exit(code=1)
+
+
+def _ensure_tailwind() -> None:
+    """Download the pinned Tailwind standalone binary into bin/ if missing.
+
+    `pave dev` and the deploy both shell out to `bin/tailwindcss`. It is
+    gitignored (platform-specific, ~100MB), so a fresh clone would not have it
+    and the css watcher would die with "No such file or directory". Fetch it
+    once, on demand, so `git clone` -> `pave setup` -> `pave dev` just works.
+    """
+    import urllib.request
+
+    binary = Path("bin/tailwindcss")
+    if binary.exists():
+        return
+
+    url = (
+        "https://github.com/tailwindlabs/tailwindcss/releases/download/"
+        f"{_TAILWIND_VERSION}/{_tailwind_asset()}"
+    )
+    typer.echo(f"Downloading Tailwind {_TAILWIND_VERSION} ({_tailwind_asset()})...")
+    binary.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        urllib.request.urlretrieve(url, binary)
+    except Exception as exc:  # noqa: BLE001 - surface a clear message, then exit
+        typer.echo(f"Failed to download Tailwind from {url}: {exc}")
+        raise typer.Exit(code=1) from exc
+    binary.chmod(0o755)
+    typer.echo("Tailwind ready at bin/tailwindcss.")
+
+
 # --- dev loop --------------------------------------------------------------
 
 
 @cli.command()
 def dev() -> None:
     """Run uvicorn + the tailwind watcher together via honcho (Procfile)."""
+    _ensure_tailwind()
     _run("honcho", "start")
 
 
@@ -201,6 +258,7 @@ def setup() -> None:
 
     migrate()
     soniq_setup()
+    _ensure_tailwind()
 
 
 # --- ops --------------------------------------------------------------------

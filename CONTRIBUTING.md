@@ -17,7 +17,7 @@ pip install -r requirements.txt -r requirements-dev.txt && pip install -e .
 cp .env.example .env && pave setup && pave dev
 ```
 
-Open http://127.0.0.1:8000. The full walkthrough, including a VPS deploy, is in [docs/getting-started.md](docs/getting-started.md).
+Open http://127.0.0.1:6161. The full walkthrough, including a VPS deploy, is in [docs/getting-started.md](docs/getting-started.md).
 
 `pave setup` is idempotent. It creates the database (or skips if it already exists), runs migrations, and installs the Soniq queue tables. `pave dev` runs uvicorn and the Tailwind watcher together via honcho. If you start uvicorn by hand, CSS changes will not rebuild and you will spend half an hour wondering why your styles look stale.
 

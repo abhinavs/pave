@@ -23,8 +23,8 @@
     <script>
       (function () {
         try {
-          var v = localStorage.getItem("pave-theme") || "system";
-          if (v !== "light" && v !== "dark" && v !== "system") v = "system";
+          var v = localStorage.getItem("pave-theme") || "dark";
+          if (v !== "light" && v !== "dark" && v !== "system") v = "dark";
           var dark =
             v === "dark" ||
             (v === "system" &&

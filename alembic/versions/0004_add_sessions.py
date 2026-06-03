@@ -45,9 +45,7 @@ def upgrade() -> None:
         ),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
@@ -56,9 +54,7 @@ def upgrade() -> None:
         ["token_hash"],
         unique=True,
     )
-    op.create_index(
-        op.f("ix_sessions_user_id"), "sessions", ["user_id"], unique=False
-    )
+    op.create_index(op.f("ix_sessions_user_id"), "sessions", ["user_id"], unique=False)
 
 
 def downgrade() -> None:

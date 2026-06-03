@@ -1,102 +1,139 @@
 {% extends "base.html" %}
-{% block title %}{{ app_name }} - a paved production FastAPI starter{% endblock %}
+{% block title %}{{ app_name }} - production FastAPI, paved. No React required.{% endblock %}
 
 {% block content %}
   {# ----------------------------------------------------------------------
-     The landing page reads as an editorial spread: a serif display voice
-     (Newsreader) for the headlines, Inter for body, IBM Plex Mono for the
-     eyebrow kickers and section markers. Sections are separated by full
-     hairline rules so the page scans top to bottom like a printed page.
-     Everything traces to a design token - no freelance colours, no second
-     accent. The logged-in branch trades the marketing pitch for a short
-     "where to next" deck; the anonymous branch is the sales surface.
+     The landing page is the sales surface for anonymous visitors and a
+     short "where to next" deck for logged-in ones. The voice borrows from
+     the developer-tool canon: a Linear-style hero with a soft accent glow,
+     Supabase-style feature grid and code showcases, Resend-style restraint
+     in the type and spacing. A serif display voice (Newsreader) carries
+     the headlines, Inter the body, IBM Plex Mono the eyebrow kickers,
+     section markers and every code panel. Sections are divided by hairline
+     rules so the page scans top to bottom. Everything traces to a design
+     token - no freelance colours, no second accent.
      ---------------------------------------------------------------------- #}
 
   {# ============================ HERO ============================ #}
-  <section class="py-10 sm:py-16">
-    <div class="flex flex-col items-start gap-6 text-left">
-      <span class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border bg-muted/50 text-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="h-6 w-6" aria-hidden="true">
-          <polygon points="232 192 160 64 96 64 24 192 232 192" opacity="0.2" fill="currentColor"/>
-          <line x1="96" y1="64" x2="24" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-          <line x1="160" y1="64" x2="232" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-          <line x1="128" y1="64" x2="128" y2="80" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-          <line x1="128" y1="120" x2="128" y2="136" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-          <line x1="128" y1="176" x2="128" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-          <line x1="24" y1="64" x2="232" y2="64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
-        </svg>
-      </span>
+  <section class="relative overflow-hidden py-10 sm:py-16">
+    {# Soft accent glow behind the headline - the one decorative flourish on
+       the page. Clipped by the section so it never spills a scrollbar. #}
+    <div
+      class="pointer-events-none absolute -top-32 left-1/2 -z-10 h-72 w-[44rem] max-w-full -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]"
+      aria-hidden="true"
+    ></div>
 
-      <p class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Full-stack Python &middot; no React required
-      </p>
+    <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      {# ---- Left: the pitch ---- #}
+      <div class="flex flex-col items-start gap-6 text-left">
+        <a
+          href="https://github.com/abhinavs/pave"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+        >
+          <span class="relative flex h-1.5 w-1.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
+          </span>
+          Open source &middot; Full-stack Python &middot; no React
+          {% with name="arrow-right", class="h-3 w-3" %}{% include "_components/icon.html" %}{% endwith %}
+        </a>
 
-      <h1 class="max-w-3xl font-serif text-4xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-5xl">
-        {% if user %}
-          Welcome back, {{ user.name }}.
-        {% else %}
-          The boring parts of a production
-          <span class="text-primary">FastAPI</span> app, already done.
-        {% endif %}
-      </h1>
+        <h1 class="max-w-2xl font-serif text-4xl font-medium leading-[1.08] tracking-tight text-foreground sm:text-5xl">
+          {% if user %}
+            Welcome back, {{ user.name }}.
+          {% else %}
+            The boring parts of a production
+            <span class="text-primary">FastAPI</span> app, already done.
+          {% endif %}
+        </h1>
 
-      <p class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-        {% if user %}
-          The webhook demo, the Soniq worker, the auth flow, the design
-          system - all wired and waiting. Open the demo or browse the
-          component gallery, then start cutting toward the part that is
-          actually your idea.
-        {% else %}
-          Pave is a production-shaped FastAPI starter, with the plumbing
-          already done. Async SQLAlchemy 2.0, server-rendered HTMX, email and
-          OAuth login on a revocable session store, a Soniq worker, and one
-          Fabric command that ships to a real Linux box over SSH. Clone it
-          Friday, deploy your own idea by Sunday.
-        {% endif %}
-      </p>
+        <p class="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+          {% if user %}
+            The live demo, the Soniq worker, the auth flow, the design
+            system - all wired and waiting. Open the demo or browse the
+            component gallery, then start cutting toward the part that is
+            actually your idea.
+          {% else %}
+            Pave is a production-shaped FastAPI starter with the plumbing
+            already done: async SQLAlchemy 2.0, server-rendered HTMX, OAuth
+            on a revocable session store, a Soniq job queue on Postgres, a
+            real test suite, and one command that ships to a Linux box over
+            SSH. Clone it Friday, deploy your own idea by Sunday.
+          {% endif %}
+        </p>
 
-      <div class="flex flex-wrap items-center gap-3">
-        {% if user %}
-          <a
-            href="/webhooks/"
-            class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >Open the webhook demo</a
-          >
-          <a
-            href="/components"
-            class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
-            >Browse components</a
-          >
-        {% else %}
-          <a
-            href="/auth/signup"
-            class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >Create an account</a
-          >
-          <a
-            href="/components"
-            class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
-            >Browse components</a
-          >
-        {% endif %}
+        <div class="flex flex-wrap items-center gap-3">
+          {% if user %}
+            <a
+              href="/webhooks/"
+              class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >Open the live demo</a
+            >
+            <a
+              href="/components"
+              class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
+              >Browse components</a
+            >
+          {% else %}
+            <a
+              href="/components"
+              class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >Browse components</a
+            >
+            <a
+              href="https://github.com/abhinavs/pave"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex h-10 items-center gap-2 rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              {% with name="github", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+              Star on GitHub
+            </a>
+          {% endif %}
+        </div>
+
+        {# Spec strip. Four claims the rest of the page backs up, laid out as
+           an even grid of stat cells - label stacked over value - so the
+           columns line up instead of drifting on a wrapping flex row. #}
+        <dl class="mt-1 grid w-full max-w-xl grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+          {% for fact in [
+            {"k": "Runtime", "v": "No Docker, no Node"},
+            {"k": "Database", "v": "SQLAlchemy 2.0"},
+            {"k": "Queue", "v": "Soniq on Postgres"},
+            {"k": "Deploy", "v": "One SSH command"},
+          ] %}
+            <div class="bg-background px-4 py-3">
+              <dt class="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
+                {{ fact.k }}
+              </dt>
+              <dd class="mt-1 text-sm font-medium text-foreground">{{ fact.v }}</dd>
+            </div>
+          {% endfor %}
+        </dl>
       </div>
 
-      {# Spec strip. Four claims the rest of the page backs up, set in mono
-         and divided by hairlines so they read as a technical fact sheet,
-         not marketing. #}
-      <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-3 font-mono text-xs text-muted-foreground">
-        {% for fact in [
-          {"k": "Runtime", "v": "No Docker, no Node"},
-          {"k": "Database", "v": "Async SQLAlchemy 2.0"},
-          {"k": "Deploy", "v": "One SSH command"},
-          {"k": "Gate", "v": "ruff + strict mypy"},
-        ] %}
-          <div class="flex items-baseline gap-2 border-l border-border pl-3">
-            <dt class="uppercase tracking-[0.14em] text-muted-foreground/70">{{ fact.k }}</dt>
-            <dd class="text-foreground">{{ fact.v }}</dd>
-          </div>
-        {% endfor %}
-      </dl>
+      {# ---- Right: clone to deploy, in one card. The whole loop - from an
+         empty directory to a live box - in six lines. Prompts are muted,
+         commands foreground, the result line picks up the primary accent. ---- #}
+      <div class="overflow-hidden rounded-lg border border-border bg-card shadow-lg">
+        <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+          <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+          <span class="ml-2 font-mono text-xs text-muted-foreground">bash</span>
+        </div>
+        <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed"><code><span class="text-muted-foreground">$</span> <span class="text-foreground">git clone https://github.com/abhinavs/pave my-app</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">cd my-app</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">python3 -m venv .venv && source .venv/bin/activate</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">pip install -e .</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">pave setup</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">pave dev</span>
+<span class="text-primary">&rarr;</span> <span class="text-muted-foreground">serving on</span> <span class="text-foreground">http://localhost:6161</span>
+<span class="text-muted-foreground"># when you are ready</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">fab production deploy</span></code></pre>
+      </div>
     </div>
   </section>
 
@@ -108,46 +145,59 @@
   {% endif %}
 
   {% if not user %}
-    {# ====================== 01 - QUICKSTART ====================== #}
+    {# ====================== 01 - STRUCTURE ====================== #}
     <section class="border-t border-border py-12 sm:py-16">
       <div class="flex items-center gap-3">
         <span class="font-mono text-xs text-primary">01</span>
         <span class="h-px w-8 bg-border"></span>
         <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Clone to localhost
+          Built to be read
         </span>
       </div>
 
       <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
-        <div class="space-y-3">
-          <h2 class="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
-            Three commands to a running app.
+        <div class="space-y-4">
+          <h2 class="max-w-lg font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            A layout with opinions, and an agent that knows them.
           </h2>
           <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-            No build step to learn, no compose file to debug. <code class="font-mono text-[0.85em] text-foreground">pave setup</code>
-            creates the database, runs the migrations, and lays down the
-            Soniq tables. <code class="font-mono text-[0.85em] text-foreground">pave dev</code> starts the server and the
-            Tailwind watcher together. You are looking at real routes, not a
-            placeholder, in under a minute.
+            Every file has one home. ORM models live in
+            <code class="font-mono text-[0.85em] text-foreground">models/</code>,
+            Pydantic DTOs in
+            <code class="font-mono text-[0.85em] text-foreground">schemas/</code> -
+            the boundary that keeps password hashes and internal fields out of
+            every response by construction, not by remembering to.
+          </p>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            And it ships an
+            <code class="font-mono text-[0.85em] text-foreground">AGENTS.md</code>:
+            the same conventions written down for Claude Code, Cursor and the
+            rest, so generated code lands in the right directory and follows
+            the same rules you do.
           </p>
         </div>
 
-        {# Terminal card. A flat surface with three window dots and a mono
-           transcript. Prompts are muted, commands are foreground, the
-           result line picks up the primary accent. #}
+        {# Project tree. Directory names in foreground, the connectors and the
+           one-line role for each in muted, AGENTS.md picked out in the accent
+           because it is the part no other Python template ships. #}
         <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
           <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
             <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
             <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
             <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
-            <span class="ml-2 font-mono text-xs text-muted-foreground">bash</span>
+            <span class="ml-2 font-mono text-xs text-muted-foreground">project layout</span>
           </div>
-          <pre class="overflow-x-auto p-4 font-mono text-[0.82rem] leading-relaxed"><code><span class="text-muted-foreground">$</span> <span class="text-foreground">git clone https://github.com/you/pave my-app</span>
-<span class="text-muted-foreground">$</span> <span class="text-foreground">cd my-app && pave setup</span>
-<span class="text-muted-foreground">$</span> <span class="text-foreground">pave dev</span>
-<span class="text-primary">&rarr;</span> <span class="text-muted-foreground">serving on</span> <span class="text-foreground">http://localhost:8000</span>
-<span class="text-muted-foreground"># when you are ready</span>
-<span class="text-muted-foreground">$</span> <span class="text-foreground">fab production deploy</span></code></pre>
+          <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed"><code><span class="text-foreground">app/</span>
+<span class="text-muted-foreground">├─ </span><span class="text-foreground">models/</span>       <span class="text-muted-foreground">SQLAlchemy ORM, nothing else</span>
+<span class="text-muted-foreground">├─ </span><span class="text-foreground">schemas/</span>      <span class="text-muted-foreground">Pydantic DTOs, the boundary</span>
+<span class="text-muted-foreground">├─ </span><span class="text-foreground">routers/</span>      <span class="text-muted-foreground">FastAPI routes</span>
+<span class="text-muted-foreground">├─ </span><span class="text-foreground">jobs/</span>         <span class="text-muted-foreground">Soniq job functions</span>
+<span class="text-muted-foreground">├─ </span><span class="text-foreground">services/</span>     <span class="text-muted-foreground">business logic</span>
+<span class="text-muted-foreground">└─ </span><span class="text-foreground">auth/</span>         <span class="text-muted-foreground">sessions + dependencies</span>
+<span class="text-foreground">templates/</span>
+<span class="text-muted-foreground">├─ </span><span class="text-foreground">_components/</span>  <span class="text-muted-foreground">reusable HTMX components</span>
+<span class="text-muted-foreground">└─ </span><span class="text-foreground">_partials/</span>    <span class="text-muted-foreground">response fragments</span>
+<span class="text-primary">AGENTS.md</span>        <span class="text-muted-foreground">the rules your agent follows</span></code></pre>
         </div>
       </div>
     </section>
@@ -169,52 +219,342 @@
       <div class="mt-8 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
         {% set _features = [
           {
-            "n": "01",
+            "icon": "database",
             "title": "Async SQLAlchemy 2.0",
             "body": "Request-scoped sessions via Depends(get_db). Alembic migrations on async engines. No legacy Query API anywhere.",
           },
           {
-            "n": "02",
+            "icon": "lock",
             "title": "Session auth with OAuth",
             "body": "Email + password, Google, and GitHub. Confirmation, password reset, and a revocable session store - all flows wired.",
           },
           {
-            "n": "03",
+            "icon": "code",
             "title": "HTMX + Alpine, no SPA",
             "body": "Server-rendered Jinja with HTMX partials. Forms render inline errors at 200, no 422 round-trip, no JSON-everywhere.",
           },
           {
-            "n": "04",
+            "icon": "lightning",
             "title": "Background jobs with Soniq",
-            "body": "Jobs receive IDs, fetch their own data, and stay idempotent by convention. Runs on the Postgres you already have.",
+            "body": "A Postgres-backed queue - no Redis, no broker. Enqueue from a route, process in a worker, idempotent by convention.",
           },
           {
-            "n": "05",
-            "title": "Ruff + strict mypy",
-            "body": "One linter, one formatter, mypy strict on app/. Run it with one command locally, enforced again in the deploy gate.",
+            "icon": "check-circle",
+            "title": "A real test suite",
+            "body": "pytest-asyncio with an httpx client and a rolled-back session per test. Auth, jobs, content and more all covered.",
           },
           {
-            "n": "06",
+            "icon": "arrow-up-right",
             "title": "Fabric deploy gate",
-            "body": "fab validate runs env, CSS, migrations, ruff, mypy, and the full pytest suite before a single byte reaches SSH.",
+            "body": "fab validate runs env, CSS, migrations, ruff, strict mypy, and the full pytest suite before a byte reaches SSH.",
           },
         ] %}
         {% for f in _features %}
-          <article class="space-y-2 bg-background p-6">
-            <div class="flex items-center gap-2">
-              <span class="font-mono text-xs text-primary">{{ f.n }}</span>
-              <h3 class="text-sm font-semibold text-foreground">{{ f.title }}</h3>
-            </div>
+          <article class="space-y-3 bg-background p-6">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted/40 text-primary">
+              {% with name=f.icon, class="h-5 w-5" %}{% include "_components/icon.html" %}{% endwith %}
+            </span>
+            <h3 class="text-sm font-semibold text-foreground">{{ f.title }}</h3>
             <p class="text-sm leading-relaxed text-muted-foreground">{{ f.body }}</p>
           </article>
         {% endfor %}
       </div>
     </section>
 
-    {# ==================== 03 - STACK RATIONALE ==================== #}
+    {# ================= 03 - BACKGROUND JOBS (SONIQ) ================= #}
     <section class="border-t border-border py-12 sm:py-16">
       <div class="flex items-center gap-3">
         <span class="font-mono text-xs text-primary">03</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Background jobs
+        </span>
+      </div>
+
+      <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <div class="space-y-4">
+          <h2 class="max-w-lg font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            Soniq: a job queue on the database you already have.
+          </h2>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Soniq runs on Postgres. No Redis, no RabbitMQ, no extra box to
+            babysit - the job table lives next to your application tables and
+            ships with the same deploy. Enqueue from a route, return in
+            milliseconds, let the worker do the slow part.
+          </p>
+          <ul class="space-y-2.5 text-sm text-muted-foreground">
+            {% for point in [
+              "Jobs take IDs, not ORM objects - they fetch their own data.",
+              "Idempotent by convention: a missing row is not an error.",
+              "Worker runs as its own systemd unit, restarted on every deploy.",
+              "Watch it run live in the demo over SSE.",
+            ] %}
+              <li class="flex items-start gap-2.5">
+                <span class="mt-0.5 text-success-ink">
+                  {% with name="check", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+                </span>
+                <span>{{ point }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="ml-2 font-mono text-xs text-muted-foreground">app/jobs/generate_report.py</span>
+          </div>
+          <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed"><code><span class="text-primary">async def</span> <span class="text-foreground">generate_report</span>(report_id: <span class="text-foreground">UUID</span>, db: <span class="text-foreground">AsyncSession</span>):
+    report = <span class="text-primary">await</span> db.get(Report, report_id)
+    <span class="text-primary">if not</span> report:
+        <span class="text-primary">return</span>                  <span class="text-muted-foreground"># idempotent, missing is fine</span>
+
+    report.status = <span class="text-success-ink">"ready"</span>
+    <span class="text-primary">await</span> db.commit()
+
+
+<span class="text-muted-foreground"># enqueue from any route, then return right away:</span>
+<span class="text-primary">await</span> soniq.enqueue(generate_report, report_id=report.id)</code></pre>
+        </div>
+      </div>
+    </section>
+
+    {# ==================== 04 - THE PAVE CLI ==================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">04</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          The pave CLI
+        </span>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-2">
+        <h2 class="max-w-2xl font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+          One command runner for the whole local loop.
+        </h2>
+        <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          No Makefile to decode. <code class="font-mono text-xs text-foreground">pave</code>
+          is a Typer CLI that runs inside your venv with no shell hop -
+          everything from the dev server to a Rails-style console to the
+          Soniq worker. Remote work belongs to <code class="font-mono text-xs text-foreground">fab</code>.
+        </p>
+      </div>
+
+      <div class="mt-8 divide-y divide-border overflow-hidden rounded-lg border border-border">
+        {% set _commands = [
+          {"cmd": "pave dev", "desc": "Uvicorn + Tailwind watcher, together."},
+          {"cmd": "pave setup", "desc": "createdb, migrate, Soniq tables - one shot."},
+          {"cmd": "pave test", "desc": "Run the pytest suite."},
+          {"cmd": "pave migration -m", "desc": "Autogenerate an Alembic migration."},
+          {"cmd": "pave migrate", "desc": "Apply migrations to head."},
+          {"cmd": "pave console", "desc": "Rails-style shell: models, live db, await."},
+          {"cmd": "pave worker", "desc": "Run a Soniq worker."},
+          {"cmd": "pave lint / fmt", "desc": "ruff check and ruff format."},
+        ] %}
+        {% for c in _commands %}
+          <div class="grid grid-cols-[9rem_1fr] items-baseline gap-4 bg-background px-5 py-3 sm:grid-cols-[11rem_1fr]">
+            <code class="font-mono text-[0.8rem] font-semibold text-primary">{{ c.cmd }}</code>
+            <span class="text-sm leading-relaxed text-muted-foreground">{{ c.desc }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# ==================== 05 - THE PAVE CONSOLE ==================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">05</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          The console
+        </span>
+      </div>
+
+      <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <div class="space-y-4">
+          <h2 class="max-w-lg font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            A Rails console, for your FastAPI app.
+          </h2>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <code class="font-mono text-xs text-foreground">pave console</code>
+            (or just <code class="font-mono text-xs text-foreground">pave c</code>)
+            drops you into an async REPL with your whole app already wired:
+            every model in scope by name, a live <code class="font-mono text-xs text-foreground">db</code>
+            session, and top-level <code class="font-mono text-xs text-foreground">await</code>
+            so queries read the way they do in your routes.
+          </p>
+          <ul class="space-y-2.5 text-sm text-muted-foreground">
+            {% for point in [
+              "Every model imported for you - no boilerplate setup block.",
+              "A real AsyncSession bound to db, the same one your routes use.",
+              "Top-level await: run a query or commit without a wrapper.",
+              "Poke at production-shaped data with --sandbox; it rolls back on exit.",
+            ] %}
+              <li class="flex items-start gap-2.5">
+                <span class="mt-0.5 text-success-ink">
+                  {% with name="check", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+                </span>
+                <span>{{ point }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="ml-2 font-mono text-xs text-muted-foreground">pave console --sandbox</span>
+          </div>
+          <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed"><code><span class="text-muted-foreground">$</span> <span class="text-foreground">pave console --sandbox</span>
+<span class="text-muted-foreground"># models, db and select() in scope &middot; sandbox: changes roll back on exit</span>
+
+<span class="text-primary">&gt;&gt;&gt;</span> <span class="text-primary">await</span> db.scalar(select(func.count()).select_from(User))
+<span class="text-foreground">128</span>
+<span class="text-primary">&gt;&gt;&gt;</span> ada = <span class="text-primary">await</span> db.scalar(select(User).limit(<span class="text-foreground">1</span>))
+<span class="text-primary">&gt;&gt;&gt;</span> ada.email
+<span class="text-success-ink">'ada@example.com'</span>
+<span class="text-primary">&gt;&gt;&gt;</span> ada.name = <span class="text-success-ink">"Ada Lovelace"</span>
+<span class="text-primary">&gt;&gt;&gt;</span> <span class="text-primary">await</span> db.commit()      <span class="text-muted-foreground"># undone on exit under --sandbox</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    {# ================ 06 - TESTS AND THE DEPLOY GATE ================ #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">06</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Tested to the gate
+        </span>
+      </div>
+
+      <div class="mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+        {# Code first on desktop, copy second - the test reads as the proof. #}
+        <div class="order-2 space-y-4 lg:order-1">
+          <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+              <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+              <span class="ml-2 font-mono text-xs text-muted-foreground">tests/test_reports.py</span>
+            </div>
+            <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed"><code><span class="text-primary">async def</span> <span class="text-foreground">test_report_enqueues_job</span>(authenticated_client, db_session):
+    resp = <span class="text-primary">await</span> authenticated_client.post(
+        <span class="text-success-ink">"/api/reports"</span>, json={<span class="text-success-ink">"range"</span>: <span class="text-success-ink">"30d"</span>})
+
+    <span class="text-primary">assert</span> resp.status_code == <span class="text-foreground">202</span>
+    <span class="text-primary">assert</span> resp.json() == {<span class="text-success-ink">"status"</span>: <span class="text-success-ink">"queued"</span>}
+
+    report = (<span class="text-primary">await</span> db_session.execute(
+        select(Report))).scalar_one()
+    <span class="text-primary">assert</span> report.status == <span class="text-success-ink">"pending"</span></code></pre>
+          </div>
+
+          {# The validate gate, as it actually prints. The label column is
+             padded to a fixed width so the second column lines up. #}
+          <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+              <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+              <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+              <span class="ml-2 font-mono text-xs text-muted-foreground">fab validate</span>
+            </div>
+            <pre class="overflow-x-auto p-4 font-mono text-[0.78rem] leading-relaxed"><code><span class="text-success-ink">&check;</span> env schema     <span class="text-muted-foreground">.env.production</span>
+<span class="text-success-ink">&check;</span> tailwind       <span class="text-muted-foreground">static/css/app.css</span>
+<span class="text-success-ink">&check;</span> migrations     <span class="text-muted-foreground">no pending changes</span>
+<span class="text-success-ink">&check;</span> ruff           <span class="text-muted-foreground">all files clean</span>
+<span class="text-success-ink">&check;</span> mypy --strict  <span class="text-muted-foreground">app/ 0 errors</span>
+<span class="text-success-ink">&check;</span> pytest         <span class="text-muted-foreground">48 passed in 3.10s</span>
+<span class="text-primary">&rarr;</span> ready to deploy</code></pre>
+          </div>
+        </div>
+
+        <div class="order-1 space-y-4 lg:order-2">
+          <h2 class="max-w-lg font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            Tests you inherit, not ones you owe.
+          </h2>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            The suite ships with the template. pytest-asyncio in auto mode, an
+            httpx client wired to the app, and a database session that rolls
+            back after every test so cases never bleed into each other.
+          </p>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Then the suite earns its keep:
+            <code class="font-mono text-[0.85em] text-foreground">fab validate</code>
+            runs ruff, strict mypy, the migration check, the env schema check
+            and the full pytest run before a single byte reaches SSH. A green
+            gate is the deploy. A red one never leaves your machine.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    {# ==================== 07 - DEPLOY WITH FABRIC ==================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">07</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Ship it with Fabric
+        </span>
+      </div>
+
+      <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <div class="space-y-4">
+          <h2 class="max-w-lg font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            One command to a real Linux box. No Docker.
+          </h2>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <code class="font-mono text-xs text-foreground">fab production deploy</code>
+            runs the gate, pushes the release, migrates the database, sets up
+            the Soniq queue, reloads the API and worker, and confirms the
+            health check - all behind a Capistrano-style atomic symlink flip.
+          </p>
+          <ul class="space-y-2.5 text-sm text-muted-foreground">
+            {% for point in [
+              "Releases are timestamped directories; going live is a symlink flip.",
+              "A failed health check rolls back automatically.",
+              "Rollback is the same flip in reverse: fab rollback.",
+              "Optional one-shot hardening: firewall, TLS, fail2ban, backups.",
+            ] %}
+              <li class="flex items-start gap-2.5">
+                <span class="mt-0.5 text-success-ink">
+                  {% with name="check", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+                </span>
+                <span>{{ point }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="ml-2 font-mono text-xs text-muted-foreground">fab production deploy</span>
+          </div>
+          <pre class="overflow-x-auto p-4 font-mono text-[0.78rem] leading-relaxed"><code><span class="text-success-ink">&check;</span> validate      <span class="text-muted-foreground">ruff &middot; mypy &middot; 48 tests &middot; migrations</span>
+<span class="text-success-ink">&check;</span> push          <span class="text-muted-foreground">release 20260603-a1c</span>
+<span class="text-success-ink">&check;</span> migrate       <span class="text-muted-foreground">alembic upgrade head</span>
+<span class="text-success-ink">&check;</span> soniq-setup   <span class="text-muted-foreground">queue tables ready</span>
+<span class="text-success-ink">&check;</span> reload        <span class="text-muted-foreground">pave-api &middot; pave-worker</span>
+<span class="text-success-ink">&check;</span> health        <span class="text-muted-foreground">/health &rarr; ok</span>
+<span class="text-primary">&rarr;</span> deployed      <span class="text-muted-foreground">in 19s &middot; rollback: fab rollback</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    {# ==================== 08 - STACK RATIONALE ==================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">08</span>
         <span class="h-px w-8 bg-border"></span>
         <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           Why these picks
@@ -238,6 +578,11 @@
             "label": "Rendering",
             "title": "Server-rendered HTML, HTMX for the wires.",
             "body": "No SPA build step, no JSON-everywhere overhead. Jinja renders the page; HTMX swaps the fragments that actually need to move. Forms render their own validation errors inline at 200, the way they did before we all forgot.",
+          },
+          {
+            "label": "Queue",
+            "title": "Soniq makes Postgres the broker.",
+            "body": "Soniq keeps its job table next to your data. No Redis to provision, no RabbitMQ to monitor, no third connection string to leak. One database backs your app and your queue, and one backup covers both.",
           },
           {
             "label": "Sessions",
@@ -264,10 +609,10 @@
       </dl>
     </section>
 
-    {# ==================== 04 - DESIGN SYSTEM ==================== #}
+    {# ==================== 09 - DESIGN SYSTEM ==================== #}
     <section class="border-t border-border py-12 sm:py-16">
       <div class="flex items-center gap-3">
-        <span class="font-mono text-xs text-primary">04</span>
+        <span class="font-mono text-xs text-primary">09</span>
         <span class="h-px w-8 bg-border"></span>
         <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
           The look
@@ -322,7 +667,7 @@
 
       <div class="mt-8 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
         {% for card in [
-          {"href": "/webhooks/", "title": "The webhook demo", "body": "Send a payload, watch the Soniq worker pick it up, and see the SSE status flip live. The reference implementation for every component token."},
+          {"href": "/webhooks/", "title": "The live demo", "body": "Send a payload, watch the Soniq worker pick it up, and see the status flip live over SSE. The reference implementation for every component token."},
           {"href": "/components", "title": "Component gallery", "body": "Every shared partial in every variant - buttons, tables, toasts, modals - rendered in one place with the markup to copy."},
           {"href": "/account", "title": "Your account", "body": "Update your profile, manage active sessions across devices, and revoke any one of them without touching the others."},
         ] %}
@@ -385,21 +730,25 @@
             Ready to clone something that already works?
           </p>
           <p class="text-sm leading-relaxed text-muted-foreground">
-            Create an account to poke at the live demo, or read the source on
-            GitHub first. Both take about a minute.
+            Take the sign-up flow for a spin on the live demo, or read the
+            source on GitHub first. Both take about a minute.
           </p>
         </div>
         <div class="flex shrink-0 flex-wrap gap-3">
           <a
             href="/auth/signup"
             class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >Create an account</a
+            >See the sign-up page</a
           >
           <a
-            href="/about"
-            class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
-            >About Pave</a
+            href="https://github.com/abhinavs/pave"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex h-10 items-center gap-2 rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
           >
+            {% with name="github", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+            Fork on GitHub
+          </a>
         </div>
       </div>
     </section>

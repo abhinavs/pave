@@ -238,7 +238,7 @@ roles. Until then, files in `content/` is the cheaper answer.
 
 ```bash
 pave dev
-# Open http://localhost:8000/founders (or /blog/your-post)
+# Open http://localhost:6161/founders (or /blog/your-post)
 ```
 
 That is the entire test loop. `pave dev` runs uvicorn with reload plus the

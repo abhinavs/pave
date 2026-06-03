@@ -3,7 +3,12 @@ import os
 os.environ.setdefault("USE_SQLITE", "true")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
-os.environ.setdefault("DEBUG", "true")
+# Force debug on for the whole suite: the functional/ui tests POST without a
+# CSRF token, so the CSRF middleware (installed only when debug is off) must
+# stay disabled. Use a hard set, not setdefault, so an ambient DEBUG=false in
+# CI cannot leak in and turn CSRF on under the tests. Tests that need the
+# debug-off behavior toggle settings.debug locally via monkeypatch.
+os.environ["DEBUG"] = "true"
 os.environ.setdefault("LOG_LEVEL", "WARNING")
 
 from collections.abc import AsyncGenerator  # noqa: E402

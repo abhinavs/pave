@@ -1,0 +1,4 @@
+# Keeps the bin/ directory present in a fresh checkout. The Tailwind standalone
+# binary (bin/tailwindcss) is downloaded into here by `fab setup-local` and in
+# CI, and is gitignored. Without this file the directory would not exist and the
+# download (curl -o bin/tailwindcss) would fail.

@@ -16,8 +16,8 @@
     <script>
       (function () {
         try {
-          var v = localStorage.getItem("pave-theme") || "system";
-          if (v !== "light" && v !== "dark" && v !== "system") v = "system";
+          var v = localStorage.getItem("pave-theme") || "dark";
+          if (v !== "light" && v !== "dark" && v !== "system") v = "dark";
           var dark =
             v === "dark" ||
             (v === "system" &&
@@ -92,6 +92,18 @@
             <span>{{ user.name }}</span>
           </a>
         {% endif %}
+        {# GitHub link. Stays visible in every breakpoint - the source is the
+           product, so the path to it is one tap from anywhere. #}
+        <a
+          href="https://github.com/abhinavs/pave"
+          target="_blank"
+          rel="noopener"
+          class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          aria-label="Pave on GitHub"
+          title="Star Pave on GitHub"
+        >
+          {% with name="github", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+        </a>
         {% include "_components/theme_toggle.html" %}
         <div class="hidden items-center gap-2 sm:flex">
           {% if user %}
@@ -165,12 +177,22 @@
             class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
             >Blog</a
           >
+          <a
+            href="https://github.com/abhinavs/pave"
+            target="_blank"
+            rel="noopener"
+            @click="navOpen = false"
+            class="flex items-center gap-2 rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
+          >
+            {% with name="github", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+            GitHub
+          </a>
           {% if user %}
             <a
               href="/webhooks/"
               @click="navOpen = false"
               class="rounded-md px-3 py-2 text-foreground transition-colors hover:bg-accent"
-              >Webhooks</a
+              >Live demo</a
             >
             <a
               href="/account"
@@ -228,8 +250,24 @@
       <div
         class="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6"
       >
-        <p>&copy; {{ now().year }} {{ app_name }}</p>
+        <p>
+          &copy; {{ now().year }} {{ app_name }} &middot; built by
+          <a
+            href="https://abhinav.co"
+            target="_blank"
+            rel="noopener"
+            class="text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+            >abhinav.co</a
+          >
+        </p>
         <nav class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <a
+            href="https://github.com/abhinavs/pave"
+            target="_blank"
+            rel="noopener"
+            class="transition-colors hover:text-foreground"
+            >GitHub</a
+          >
           <a href="/about" class="transition-colors hover:text-foreground"
             >About</a
           >

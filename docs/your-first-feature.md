@@ -239,7 +239,7 @@ pave dev
 In another, create a snippet via the JSON API:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/snippets \
+curl -X POST http://127.0.0.1:6161/api/snippets \
   -H "Content-Type: application/json" \
   -d '{"title":"First","body":"It works."}'
 ```
@@ -255,9 +255,9 @@ curl -X POST http://127.0.0.1:8000/api/snippets \
 }
 ```
 
-Open http://127.0.0.1:8000/snippets in your browser. Your snippet is there.
+Open http://127.0.0.1:6161/snippets in your browser. Your snippet is there.
 
-If `DEBUG=true`, http://127.0.0.1:8000/api/docs shows the new endpoints, schemas, and an interactive "Try it out" button. That page is regenerated from the schemas; you did not write a line of OpenAPI by hand.
+If `DEBUG=true`, http://127.0.0.1:6161/api/docs shows the new endpoints, schemas, and an interactive "Try it out" button. That page is regenerated from the schemas; you did not write a line of OpenAPI by hand.
 
 ---
 

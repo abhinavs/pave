@@ -4,7 +4,7 @@ This page takes you from a fresh clone to a live, TLS-terminated app on a server
 
 ## What you will have in 15 minutes
 
-- Pave running on your laptop at `http://127.0.0.1:8000`
+- Pave running on your laptop at `http://127.0.0.1:6161`
 - One edit you made yourself, visible in the browser
 - The same app running at `https://your-domain.com` on a real server
 - A `/health` endpoint your monitoring can probe
@@ -64,17 +64,17 @@ pave dev
 
 `pave setup` creates the database, runs migrations, and installs the Soniq job tables. It is safe to run more than once.
 
-`pave dev` starts two processes together: the FastAPI server on port 8000 and the Tailwind watcher that rebuilds CSS on save.
+`pave dev` starts two processes together: the FastAPI server on port 6161 and the Tailwind watcher that rebuilds CSS on save.
 
 **You should see:**
 
 ```
-17:21:03 web.1  | INFO:     Uvicorn running on http://127.0.0.1:8000
+17:21:03 web.1  | INFO:     Uvicorn running on http://127.0.0.1:6161
 17:21:03 css.1  | Rebuilding...
 17:21:03 css.1  | Done in 142ms.
 ```
 
-Open http://127.0.0.1:8000. The home page loads. Click around: `/blog`, `/about`, `/auth/login`. Visit `/webhooks` - that page is the reference for every UI component shipped with Pave.
+Open http://127.0.0.1:6161. The home page loads. Click around: `/blog`, `/about`, `/auth/login`. Visit `/webhooks` - that page is the reference for every UI component shipped with Pave.
 
 **Common mistake:** if you started a separate `uvicorn` by hand, the Tailwind watcher will not be running and CSS changes will not appear. Always start with `pave dev`.
 
@@ -98,7 +98,7 @@ published: true
 Pave is a production starting point for full-stack Python web apps...
 ```
 
-Change the first paragraph to whatever you like, save, and reload http://127.0.0.1:8000/about. Your edit is live.
+Change the first paragraph to whatever you like, save, and reload http://127.0.0.1:6161/about. Your edit is live.
 
 **Why this works.** Pave's content system reads markdown files from `content/` at request time. No database table, no admin form, no rebuild. The same pattern works for blog posts under `content/blog/`.
 
