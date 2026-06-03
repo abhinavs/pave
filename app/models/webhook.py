@@ -7,21 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-# == Schema Information
-#
-# Table name: webhook_events
-#
-# id         : uuid, primary key, default=uuid4()
-# slug       : varchar(128), not null
-# status     : varchar(32), not null, default='pending'
-# payload    : json, not null, default=dict()
-# created_at : timestamp with time zone, not null, server_default=now()
-#
-# Indexes
-#   ix_webhook_events_slug (slug)
-#
-# == End Schema Information
-
 
 class WebhookEvent(Base):
     """A received webhook, persisted before any processing.
@@ -40,3 +25,19 @@ class WebhookEvent(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+# == Schema Information
+#
+# Table name: webhook_events
+#
+# id         : uuid, primary key, default=uuid4()
+# slug       : varchar(128), not null
+# status     : varchar(32), not null, default='pending'
+# payload    : json, not null, default=dict()
+# created_at : timestamp with time zone, not null, server_default=now()
+#
+# Indexes
+#   ix_webhook_events_slug (slug)
+#
+# == End Schema Information

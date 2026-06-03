@@ -20,26 +20,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-# == Schema Information
-#
-# Table name: sessions
-#
-# id            : uuid, primary key, default=uuid4()
-# user_id       : uuid, not null, foreign key -> users.id
-# token_hash    : varchar(64), not null, unique - sha256 hex of cookie
-# user_agent    : varchar(255), the agent string at create time
-# ip_address    : varchar(45), the address at create time (v6-safe)
-# created_at    : timestamp with time zone, not null
-# last_used_at  : timestamp with time zone, not null - touched on use
-# expires_at    : timestamp with time zone, not null
-# revoked_at    : timestamp with time zone, null until explicitly killed
-#
-# Indexes
-#   ix_sessions_token_hash (token_hash) UNIQUE
-#   ix_sessions_user_id    (user_id)
-#
-# == End Schema Information
-
 
 class Session(Base):
     """One row per active or expired session.
@@ -75,3 +55,27 @@ class Session(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
+
+
+# == Schema Information
+#
+# Table name: sessions
+#
+# id           : uuid, primary key, default=uuid4()
+# user_id      : uuid, not null, -> users.id
+# token_hash   : varchar(64), not null
+# user_agent   : varchar(255)
+# ip_address   : varchar(45)
+# created_at   : timestamp with time zone, not null, server_default=now()
+# last_used_at : timestamp with time zone, not null, server_default=now()
+# expires_at   : timestamp with time zone, not null
+# revoked_at   : timestamp with time zone
+#
+# Indexes
+#   ix_sessions_token_hash (token_hash) UNIQUE
+#   ix_sessions_user_id (user_id)
+#
+# Foreign Keys
+#   user_id -> users.id (ON DELETE CASCADE)
+#
+# == End Schema Information

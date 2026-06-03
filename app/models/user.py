@@ -6,27 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-# == Schema Information
-#
-# Table name: users
-#
-# id                : uuid, primary key, default=uuid4()
-# name              : varchar(255), not null
-# email             : varchar(320), not null
-# password_hash     : varchar(255)
-# provider          : varchar(32)
-# provider_id       : varchar(255)
-# avatar_url        : varchar(512)
-# email_verified_at : timestamp with time zone
-# is_active         : boolean, not null, default=True
-# created_at        : timestamp with time zone, not null, server_default=now()
-# updated_at        : timestamp with time zone, not null, server_default=now()
-#
-# Indexes
-#   ix_users_email (email) UNIQUE
-#
-# == End Schema Information
-
 
 class User(Base):
     """An account. Password-based or OAuth-linked, possibly both.
@@ -62,3 +41,25 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+# == Schema Information
+#
+# Table name: users
+#
+# id                : uuid, primary key, default=uuid4()
+# name              : varchar(255), not null
+# email             : varchar(320), not null
+# password_hash     : varchar(255)
+# provider          : varchar(32)
+# provider_id       : varchar(255)
+# avatar_url        : varchar(512)
+# email_verified_at : timestamp with time zone
+# is_active         : boolean, not null, default=True
+# created_at        : timestamp with time zone, not null, server_default=now()
+# updated_at        : timestamp with time zone, not null, server_default=now()
+#
+# Indexes
+#   ix_users_email (email) UNIQUE
+#
+# == End Schema Information
