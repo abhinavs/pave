@@ -78,6 +78,8 @@ Open http://127.0.0.1:8000. The home page loads. Click around: `/blog`, `/about`
 
 **Common mistake:** if you started a separate `uvicorn` by hand, the Tailwind watcher will not be running and CSS changes will not appear. Always start with `pave dev`.
 
+**Inspect your data:** run `pave console` (alias `pave c`) for a Rails-style REPL with every model bound by name and a live `db` session, with top-level `await` enabled: `await db.scalar(select(User).limit(1))`. Add `--sandbox` to experiment against real data in one transaction that rolls back when you exit.
+
 ---
 
 ## Part 2 - Make your first change
