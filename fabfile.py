@@ -1,7 +1,7 @@
 """Fabric tasks: the deploy gate and everything that needs SSH.
 
 Day-to-day local commands (dev, test, lint, fmt, typecheck, migrate,
-migration, downgrade, setup, shell, worker, soniq-setup) live in the `pave`
+migration, downgrade, setup, console, worker, soniq-setup) live in the `pave`
 console script - see app/cli.py. Fabric earns its keep when there are
 Connections to manage and hosts to target, which is exactly what `deploy`
 and the remote tasks below do.

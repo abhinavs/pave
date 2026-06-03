@@ -207,26 +207,108 @@ def setup() -> None:
 
 
 @cli.command()
-def shell() -> None:
-    """Open an IPython shell with the app, models and session factory loaded."""
+def console(
+    sandbox: bool = typer.Option(
+        False,
+        "--sandbox",
+        "-s",
+        help="Roll back every database change made in the session on exit.",
+    ),
+) -> None:
+    """Open a Rails-style console: an IPython REPL with the app loaded.
+
+    Every ORM model is bound by name (User, Session, WebhookEvent, the way
+    `rails console` exposes its models), a live async session `db` is ready to
+    query, and top-level `await` is enabled so the async API reads naturally:
+
+        await db.scalar(select(User).limit(1))
+        u = User(email="a@b.com"); db.add(u); await db.commit()
+
+    Also in scope: select and text from SQLAlchemy, settings, engine, models,
+    soniq, and AsyncSessionLocal for a second session. Pass --sandbox (-s) to
+    wrap the whole session in one transaction that is rolled back when you
+    exit, so you can experiment against real data without persisting anything.
+    """
+    _console(sandbox)
+
+
+@cli.command("c", hidden=True)
+def console_alias(
+    sandbox: bool = typer.Option(
+        False,
+        "--sandbox",
+        "-s",
+        help="Roll back every database change made in the session on exit.",
+    ),
+) -> None:
+    """Short alias for `console`, the way `rails c` shortcuts `rails console`."""
+    _console(sandbox)
+
+
+def _console(sandbox: bool) -> None:
+    """The console implementation behind both `console` and its `c` alias."""
+    import asyncio
+
     import IPython
+    import IPython.core.async_helpers as async_helpers
+    from sqlalchemy import select, text
 
     from app import models
     from app.database import AsyncSessionLocal, engine
     from app.jobs import soniq
     from app.settings import settings
 
+    # IPython runs every top-level `await` on the loop from get_asyncio_loop(),
+    # so point that global at a loop we own: the session connects on it and the
+    # teardown below runs on it after the REPL exits, keeping it all one loop.
+    loop = asyncio.new_event_loop()
+    async_helpers._asyncio_event_loop = loop  # type: ignore[assignment]
+
+    db = AsyncSessionLocal()
+
+    if sandbox:
+        # Rails `--sandbox`: one transaction, never committed. commit() becomes
+        # a flush so later reads still see the change, then it all rolls back on
+        # exit. SQLite mishandles the savepoint approach, so never really commit.
+        async def _flush_only() -> None:
+            await db.flush()
+
+        db.commit = _flush_only  # type: ignore[method-assign]
+
+    models_by_name = {name: getattr(models, name) for name in models.__all__}
+
+    mode = "  (sandbox: changes roll back on exit)" if sandbox else ""
+    banner = (
+        f"Pave console{mode}\n"
+        f"  models: {', '.join(models.__all__)}\n"
+        f"  also: db, engine, settings, soniq, select, text, AsyncSessionLocal\n"
+        f"  await is on:  await db.scalar(select(User).limit(1))"
+    )
+
     IPython.start_ipython(  # type: ignore[no-untyped-call]
         argv=[],
         user_ns={
+            "db": db,
             "settings": settings,
             "engine": engine,
             "AsyncSessionLocal": AsyncSessionLocal,
             "models": models,
             "soniq": soniq,
+            "select": select,
+            "text": text,
+            **models_by_name,
         },
-        banner1="Pave shell: settings, engine, AsyncSessionLocal, models, soniq",
+        banner1=banner,
     )
+
+    async def _teardown() -> None:
+        if sandbox:
+            await db.rollback()
+        await db.close()
+        await engine.dispose()
+
+    loop.run_until_complete(_teardown())
+    loop.close()
 
 
 @cli.command()

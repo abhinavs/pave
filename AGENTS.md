@@ -330,7 +330,8 @@ pave setup        # createdb + migrate + Soniq tables (one-shot)
 pave migrate      # alembic upgrade head
 pave migration -m "describe the change"   # autogenerate a migration
 pave downgrade    # alembic downgrade (defaults to -1)
-pave shell        # IPython with app, models, AsyncSessionLocal, soniq
+pave console      # Rails-style console (alias `pave c`): models by name, live `db`, top-level await
+pave console --sandbox  # same, but every db change is rolled back on exit
 pave worker       # run a Soniq worker
 pave soniq-setup  # create Soniq queue tables (idempotent)
 

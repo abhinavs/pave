@@ -199,4 +199,4 @@ If you genuinely process millions of jobs a day, you will outgrow Soniq. Until t
 
 - **Send email from a job** -> [email.md](email.md) covers the generic HTTP provider.
 - **Process a webhook** -> read `app/jobs/process_payload.py` and the matching route in `app/routers/webhooks.py`.
-- **See what is in the queue** -> `pave shell`, then query the Soniq job table directly.
+- **See what is in the queue** -> `pave console`, then query the Soniq job table directly.

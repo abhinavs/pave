@@ -32,7 +32,7 @@ LOCAL_COMMANDS = {
     "downgrade",
     "setup",
     "check-env",
-    "shell",
+    "console",
     "worker",
     "soniq-setup",
 }

@@ -105,7 +105,7 @@ These are conscious omissions or explicit "you will need this if".
 - **No GDPR/erasure plumbing.** No "delete my data" endpoint, no audit log
   of who touched a user record. If the app collects EU resident data,
   this is a hard gap.
-- **No admin UI.** There is no `/admin`. Use `pave shell` (IPython) plus
+- **No admin UI.** There is no `/admin`. Use `pave console` (IPython) plus
   psql until you have a reason to build one - then build the smallest
   thing that solves the actual problem, not a CMS.
 - **Email deliverability.** The generic HTTP provider is provider-neutral

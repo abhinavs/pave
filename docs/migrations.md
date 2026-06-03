@@ -96,7 +96,7 @@ Then test the downgrade. This is non-optional:
 
 ```bash
 pave downgrade           # rolls back one revision
-# inspect the DB: psql, pave shell, whatever you like
+# inspect the DB: psql, pave console, whatever you like
 pave migrate             # forward again
 ```
 
@@ -201,7 +201,7 @@ referencing that column was removed in a previous deploy, not this one.
 ## Data migrations vs schema migrations
 
 Schema migrations belong in Alembic. Data migrations belong in a one-shot
-script you run with `pave shell`.
+script you run with `pave console`.
 
 Small backfills inline in an Alembic file are fine:
 
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-Run it once: `pave shell` then `exec(open("scripts/backfill_full_name.py").read())`,
+Run it once: `pave console` then `exec(open("scripts/backfill_full_name.py").read())`,
 or run it as a standalone script after deploy. Keep the file in `scripts/`
 and delete it once the backfill is done and committed somewhere durable.
 
