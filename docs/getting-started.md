@@ -138,8 +138,10 @@ Still as root (or via `sudo`):
 
 ```bash
 apt-get update
-apt-get install -y postgresql nginx python3.12 python3.12-venv rsync
+apt-get install -y postgresql nginx python3.12 python3.12-venv git curl
 ```
+
+`git` clones and snapshots the release on the server; `curl` downloads the pinned Tailwind binary on the first deploy.
 
 ### Create the database
 
@@ -157,8 +159,19 @@ mkdir -p /srv/pave/releases /srv/pave/shared
 chown -R deploy:deploy /srv/pave
 ```
 
-`/srv/pave/shared` holds files that must survive a deploy: the env file lives
-there, not in a release directory, because rsync replaces `current` each time.
+`/srv/pave/shared` holds files that must survive a deploy: the env file, the
+shared venv, the Tailwind binary, and user uploads all live there, not in a
+release directory, because each deploy swaps `current` to a fresh release.
+
+The deploy also needs the `deploy` user to be able to read your git repo, since
+the server builds each release from its own clone. Add a deploy key:
+
+```bash
+sudo -u deploy ssh-keygen -t ed25519 -f /home/deploy/.ssh/id_ed25519 -N ""
+cat /home/deploy/.ssh/id_ed25519.pub   # add as a read-only deploy key on the repo
+```
+
+Set `GIT_REPO` in `fabfile.py` to that repo's SSH URL. `fab production setup-server` then clones it, fetches Tailwind, and creates the shared venv (or the first `fab production deploy` does all three on demand).
 
 ### Place `.env.production`
 
@@ -249,12 +262,13 @@ fab production deploy
 **What happens, in order:**
 
 1. `fab validate` runs locally: env schema check, CSS build, migrations, tests, type check. If any step fails, nothing touches the server.
-2. A release id is stamped (`vrk epoch`) and the tree is rsynced to `/srv/pave/releases/{id}/` on the server.
-3. A fresh virtualenv is built in the new release directory and dependencies are installed.
-4. Migrations run on the server against the production database.
-5. The `/srv/pave/current` symlink atomically flips to the new release.
-6. `systemctl restart pave-api pave-worker` picks up the new code.
-7. `/health` is probed with retries. On success, the deploy is done. On failure, the symlink flips back and the services restart on the previous release before the command exits.
+2. A preflight checks your tree is clean and local `HEAD` is the tip of `origin/main`, then a release id is stamped (`vrk epoch` + short commit hash).
+3. The server fetches `origin/main` into its own clone and snapshots it (`git archive`) into `/srv/pave/releases/{id}/`.
+4. The CSS is built on the server with the pinned Tailwind binary, and the shared venv is updated with any new dependencies.
+5. Migrations run on the server against the production database.
+6. The `/srv/pave/current` symlink atomically flips to the new release.
+7. `systemctl restart pave-api pave-worker` picks up the new code.
+8. `/health` is probed with retries. On success, old releases are pruned and the deploy is done. On failure, the symlink flips back and the services restart on the previous release before the command exits.
 
 **You should see** (timing varies):
 
@@ -265,8 +279,9 @@ fab production deploy
     migrations ........ ok
     tests ............. ok (124 passed in 8.31s)
     typecheck ......... ok
-==> release 20260527T140312Z
-    rsync ............. 0.4 MB
+==> release 1748352192-a1b2c3d
+    snapshot .......... ok (git archive origin/main)
+    css build ......... ok
     venv .............. ok
     migrations ........ ok
     symlink flipped ... ok
@@ -315,7 +330,7 @@ Three usual suspects: `.env.production` is missing or unreadable; `DATABASE_URL`
 Gunicorn is not listening on `/run/pave/pave.sock`. `systemctl restart pave-api` and check `journalctl -u pave-api`.
 
 **The site loads but CSS is missing.**
-You deployed before running `fab validate` ever locally, so `static/css/app.css` was not built. Run `pave dev` once to rebuild it (or `bin/tailwindcss -i static/css/source.css -o static/css/app.css`) and redeploy.
+The deploy builds `static/css/app.css` on the server with the pinned Tailwind binary, so a missing stylesheet means that step did not run: usually the binary failed to download (check the `deploy` user can reach GitHub, or pre-fetch it with `fab production setup-server`) or `static/css/source.css` has a syntax error the build rejected. Re-run `fab production deploy` and watch the `css build` line.
 
 ---
 

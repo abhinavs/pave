@@ -8,7 +8,7 @@ Most Python web apps are deployed in one of three ways:
 
 1. **A managed platform** (Heroku, Fly, Render, Railway). Fast to start. You pay per dyno or per build minute, and you inherit the platform's quirks. Migrating off is a project.
 2. **Containers on a cloud** (Docker Compose, ECS, GKE). Powerful and portable, but the operational surface is large for a small app. You maintain Docker, a registry, a CI/CD pipeline, an orchestrator, and the app.
-3. **Plain Linux** (apt, systemd, Nginx, rsync). The oldest path. Reliable, cheap, fast to deploy. The hard part is wiring it up correctly the first time, which is exactly what Pave does for you.
+3. **Plain Linux** (apt, systemd, Nginx, git over SSH). The oldest path. Reliable, cheap, fast to deploy. The hard part is wiring it up correctly the first time, which is exactly what Pave does for you.
 
 Pave is the third option, pre-wired. You write FastAPI; Pave is the production glue.
 
@@ -68,7 +68,7 @@ Pave is the right next step when the platform's pricing starts to bite, when you
 
 ### "Is SSH-based deploy still safe in 2026?"
 
-Yes, with the standard precautions: key-only auth, a non-root deploy user with narrow sudo, fail2ban, automatic security updates. [deploy.md](deploy.md) walks through all of this. The deploy itself is `rsync` over SSH, which is the same primitive every "no Docker" deploy tool ultimately uses.
+Yes, with the standard precautions: key-only auth, a non-root deploy user with narrow sudo, fail2ban, automatic security updates. [deploy.md](deploy.md) walks through all of this. The deploy itself is git over SSH: the server fetches your repo and snapshots a release with `git archive`, the same primitive every "no Docker" deploy tool ultimately uses.
 
 The risk profile of SSH is well understood. The risk profile of a leaked container-registry token is also well understood. Pick the one whose mitigations you would rather audit.
 

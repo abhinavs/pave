@@ -18,6 +18,7 @@ LOCAL_TASKS = {
 REMOTE_TASKS = {
     "deploy",
     "rollback",
+    "rebuild-venv",
     "logs",
     "ssh",
     "psql",
@@ -42,6 +43,26 @@ def test_all_remote_tasks_registered() -> None:
     assert REMOTE_TASKS <= _task_names()
 
 
+def test_bare_task_falls_back_to_the_default_environment() -> None:
+    # A bare `fab deploy` (no `staging`/`production` selector) targets
+    # DEFAULT_ENV instead of erroring, and that default must be a real target.
+    assert fabfile.DEFAULT_ENV in fabfile._TARGETS
+    fabfile._SELECTED.clear()
+    try:
+        assert fabfile._target() == fabfile._TARGETS[fabfile.DEFAULT_ENV]
+    finally:
+        fabfile._SELECTED.clear()
+
+
+def test_selecting_an_environment_overrides_the_default() -> None:
+    fabfile._SELECTED.clear()
+    try:
+        fabfile.staging.body(None)  # .body is the unwrapped function
+        assert fabfile._target()["host"] == fabfile._TARGETS["staging"]["host"]
+    finally:
+        fabfile._SELECTED.clear()
+
+
 def test_validate_chains_css_migration_tests_mypy() -> None:
     src = inspect.getsource(fabfile.validate.body)
     assert "tailwindcss" in src  # css
@@ -61,10 +82,11 @@ def test_validate_does_not_mutate_a_real_database() -> None:
 
 def test_deploy_refuses_dirty_or_unpushed_source() -> None:
     src = inspect.getsource(fabfile.deploy.body)
-    # A dirty tree would make the release hash misrepresent what shipped...
+    # A dirty tree means the tested code is not what is committed...
     assert "git status --porcelain" in src
-    # ...and an unpushed HEAD means shipping a commit no one else (or CI) has.
-    assert "--contains HEAD" in src or "origin" in src
+    # ...and the server ships origin/<branch>, so local HEAD must equal that
+    # branch tip or it would deploy a different commit than the one validated.
+    assert "origin/" in src and "rev-parse HEAD" in src
 
 
 def test_restore_is_transactional_and_guarded() -> None:
@@ -93,21 +115,44 @@ def test_deploy_persists_uploads_via_shared_symlink() -> None:
 
 def test_deploy_prunes_old_releases() -> None:
     src = inspect.getsource(fabfile.deploy.body)
-    # Each deploy builds its own venv; without pruning the disk fills up.
+    # Releases accumulate even though the venv is shared; without pruning the
+    # disk fills up.
     assert "KEEP_RELEASES" in src or "head -n -" in src
     assert fabfile.KEEP_RELEASES >= 2  # always keep a rollback target
 
 
 def test_deploy_ships_a_clean_tree_not_the_working_dir() -> None:
     src = inspect.getsource(fabfile.deploy.body)
-    # Honour .gitignore so local .env secrets and caches never ship, and
-    # --delete so a reused release dir cannot carry stale files.
-    assert ".gitignore" in src
-    assert "--delete" in src
-    # app.css is a gitignored build artifact; validate builds it fresh, so the
-    # rsync must force-include it (ahead of the .gitignore filter) or the
-    # server, which has no Tailwind, would ship with no CSS.
-    assert "+ /static/css/app.css" in src
+    # The snapshot is a `git archive` of origin/<branch>, which exports only
+    # tracked files: gitignored secrets (.env), the dev db, and caches are
+    # untracked, so they cannot ride along. No rsync, no .gitignore filter.
+    assert "git -C" in src and "archive" in src
+    assert "rsync" not in src
+
+
+def test_deploy_builds_css_on_the_server() -> None:
+    src = inspect.getsource(fabfile.deploy.body)
+    # app.css is a gitignored build artifact, so the archive carries none; the
+    # server rebuilds it with the pinned Tailwind binary, or it would ship
+    # with no CSS.
+    assert "tailwindcss" in src
+    assert "static/css/app.css" in src
+
+
+def test_deploy_uses_the_shared_venv_not_a_release_venv() -> None:
+    src = inspect.getsource(fabfile.deploy.body)
+    # Deploys reuse one venv for speed; the deploy must not build a per-release
+    # one. rebuild-venv is the escape hatch for a stale shared venv.
+    assert "SHARED_VENV" in src
+    assert "python -m venv .venv" not in src
+
+
+def test_rebuild_venv_recreates_from_scratch() -> None:
+    src = inspect.getsource(fabfile.rebuild_venv.body)
+    # A removed dependency only clears on a from-scratch rebuild, so it must rm
+    # the old venv before recreating and reinstalling.
+    assert "rm -rf" in src and "SHARED_VENV" in src
+    assert "pip install" in src
 
 
 def test_deploy_runs_validate_before_any_ssh() -> None:

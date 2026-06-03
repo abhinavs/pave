@@ -15,8 +15,8 @@ Type=notify
 User=deploy
 Group=deploy
 WorkingDirectory=/srv/pave/current
-# Env lives outside the release dirs: rsync replaces /srv/pave/current every
-# deploy, so a release-relative path would vanish. /srv/pave/shared is stable.
+# Env lives outside the release dirs: every deploy swaps the /srv/pave/current
+# symlink, so a release-relative path would vanish. /srv/pave/shared is stable.
 EnvironmentFile=/srv/pave/shared/.env.production
 
 # RuntimeDirectory creates and owns /run/pave for the Unix socket nginx
@@ -24,15 +24,22 @@ EnvironmentFile=/srv/pave/shared/.env.production
 RuntimeDirectory=pave
 RuntimeDirectoryMode=0750
 
-ExecStart=/srv/pave/current/.venv/bin/gunicorn app.main:app \
+# The venv is shared across releases (fab rebuild-venv recreates it); the code
+# is found via WorkingDirectory, which gunicorn puts on sys.path.
+ExecStart=/srv/pave/shared/venv/bin/gunicorn app.main:app \
     --worker-class uvicorn.workers.UvicornWorker \
     --workers 3 \
     --bind unix:/run/pave/pave.sock \
+    --graceful-timeout 30 \
     --access-logfile - \
     --error-logfile -
 
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
+# A deploy restart sends SIGTERM; gunicorn stops accepting new connections and
+# lets in-flight requests finish (up to --graceful-timeout). Give systemd a
+# little more than that before it escalates to SIGKILL.
+TimeoutStopSec=35
 Restart=always
 RestartSec=3
 

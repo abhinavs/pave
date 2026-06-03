@@ -16,8 +16,8 @@ DEPLOY = ROOT / "deploy"
 DOCS = ROOT / "docs"
 
 # The single source of truth for where the env file lives on the server. It
-# must sit OUTSIDE the release directories (which rsync overwrites every
-# deploy), so it is shared and stable across releases.
+# must sit OUTSIDE the release directories (which each deploy replaces), so it
+# is shared and stable across releases.
 ENV_FILE_PATH = "/srv/pave/shared/.env.production"
 
 SETUP_TASKS = {
@@ -30,6 +30,7 @@ SETUP_TASKS = {
     "setup-swap",
     "setup-log-rotation",
     "setup-monitoring",
+    "setup-server",
 }
 
 
@@ -102,9 +103,21 @@ def test_worker_service_runs_the_soniq_worker() -> None:
     unit = _read("pave-worker.service")
     assert "[Service]" in unit and "[Install]" in unit
     assert "ExecStart=" in unit
-    assert "worker" in unit  # `pave worker`
+    assert "worker" in unit  # `python -m app.cli worker`
     assert "User=deploy" in unit
     assert "WantedBy=multi-user.target" in unit
+
+
+def test_units_drain_gracefully_on_a_deploy_restart() -> None:
+    # A deploy restarts both services; neither may hard-kill live work. The API
+    # finishes in-flight requests (gunicorn --graceful-timeout) and the worker
+    # finishes its current job, each bounded by TimeoutStopSec so a stuck
+    # process cannot wedge the deploy.
+    api = _read("pave-api.service")
+    assert "--graceful-timeout" in api
+    assert "TimeoutStopSec=" in api
+    worker = _read("pave-worker.service")
+    assert "TimeoutStopSec=" in worker
 
 
 def test_units_are_hardened_with_writable_shared_dir() -> None:
@@ -129,8 +142,8 @@ def _env_file_in_unit(unit_name: str) -> str:
 
 
 def test_units_load_env_from_stable_shared_path() -> None:
-    # A release-relative path (/srv/pave/current/...) is wrong: rsync ships a
-    # fresh release dir every deploy, so the env file would have to be re-placed
+    # A release-relative path (/srv/pave/current/...) is wrong: every deploy
+    # swaps in a fresh release dir, so the env file would have to be re-placed
     # each time, and a missing EnvironmentFile is a fatal systemd start error.
     for unit in ("pave-api.service", "pave-worker.service"):
         path = _env_file_in_unit(unit)

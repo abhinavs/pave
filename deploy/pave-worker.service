@@ -16,11 +16,18 @@ WorkingDirectory=/srv/pave/current
 # Shared, release-independent env file (see pave-api.service for why).
 EnvironmentFile=/srv/pave/shared/.env.production
 
-# `pave worker` runs soniq.run_worker(). Concurrency is a worker concern,
-# not a deploy concern: tune it here, not in fabfile.
-ExecStart=/srv/pave/current/.venv/bin/pave worker --concurrency 4
+# The venv is shared across releases and does not install the app package, so
+# the worker runs through `python -m app.cli` (resolved against the release on
+# sys.path via WorkingDirectory) rather than a `pave` console script. That CLI
+# command runs soniq.run_worker(); concurrency is a worker concern, not a
+# deploy concern, so tune it here, not in fabfile.
+ExecStart=/srv/pave/shared/venv/bin/python -m app.cli worker --concurrency 4
 
 KillMode=mixed
+# A deploy restart sends SIGTERM; the worker stops claiming new jobs and lets
+# the in-flight one finish before exiting. Bound the drain so a stuck job
+# cannot wedge the deploy: systemd escalates to SIGKILL after this.
+TimeoutStopSec=60
 Restart=always
 RestartSec=5
 

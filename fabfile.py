@@ -19,32 +19,58 @@ from invoke import task
 
 from app.settings import settings
 
-# Deploy targets. `staging` / `production` mutate this in-process so a chained
-# `fab production deploy` knows where to connect. Kept here, not in settings,
-# because it is operator config, not application config.
+# Deploy targets. `branch` is the ref the server checks out: each release is a
+# snapshot of origin/<branch>. Add or edit environments here.
 _TARGETS = {
-    "staging": {"host": "staging.usepave.dev", "domain": "staging.usepave.dev"},
-    "production": {"host": "usepave.dev", "domain": "usepave.dev"},
+    "staging": {
+        "host": "staging.usepave.dev",
+        "domain": "staging.usepave.dev",
+        "branch": "main",
+    },
+    "production": {
+        "host": "usepave.dev",
+        "domain": "usepave.dev",
+        "branch": "main",
+    },
 }
+# The environment a bare `fab deploy` (or any task) targets when none is named.
+# Defaults to staging so the dangerous target (production) always has to be
+# typed in full: `fab production deploy`.
+DEFAULT_ENV = "staging"
 _SELECTED: dict[str, str] = {}
 
 DEPLOY_USER = "deploy"
 APP_DIR = "/srv/pave"
 RELEASES_DIR = f"{APP_DIR}/releases"
 CURRENT = f"{APP_DIR}/current"
-# Release-independent shared env file (see C1 / deploy/*.service). systemd
-# loads it for the services; ad-hoc tasks must source it themselves.
+# Repo the server clones and cuts release snapshots from. The deploy user needs
+# read access to it (a deploy key in ~deploy/.ssh). Set this to your repo URL.
+GIT_REPO = "git@github.com:usepave/pave.git"
+REPO_DIR = f"{APP_DIR}/repo"
+# Shared env file, loaded by the systemd units. Ad-hoc tasks source it directly.
 SHARED_ENV = f"{APP_DIR}/shared/.env.production"
+# One venv, shared across releases and updated in place each deploy (fast). A
+# removed dependency lingers until `fab <env> rebuild-venv`, and rollback does
+# not restore the previous dependency set. The systemd units run from here.
+SHARED_VENV = f"{APP_DIR}/shared/venv"
+# Pinned Tailwind binary, downloaded once. The CSS is built on the server during
+# deploy, so the box needs its own copy. Keep the version in step with bin/.
+SHARED_BIN = f"{APP_DIR}/shared/bin"
+TAILWIND_VERSION = "v3.4.17"
+TAILWIND_URL = (
+    "https://github.com/tailwindlabs/tailwindcss/releases/download/"
+    f"{TAILWIND_VERSION}/tailwindcss-linux-x64"
+)
 
-# How many release dirs to keep after a deploy. Each carries its own venv
-# (100-300MB), so unbounded growth fills the disk. Keep enough that rollback
-# always has a target.
+# Release dirs to keep after a deploy. Enough that rollback has a target,
+# bounded so the disk does not fill.
 KEEP_RELEASES = 5
 
 
 def _target() -> dict[str, str]:
     if not _SELECTED:
-        sys.exit("No environment selected. Use: fab production <task>")
+        _SELECTED.update(_TARGETS[DEFAULT_ENV])
+        print(f"no environment selected, using default: {DEFAULT_ENV}")
     return _SELECTED
 
 
@@ -64,7 +90,7 @@ def _with_env(command: str) -> str:
 
 
 def _emit_deploy_event(release: str) -> None:
-    """Best-effort deploy.success to Webhooq. httpx, not vrk: vrk grab is GET."""
+    """Best-effort deploy.success notification to the configured endpoint."""
     endpoint = settings.webhooq_endpoint
     if not endpoint:
         return
@@ -123,59 +149,102 @@ def validate(c):
 # --- remote tasks ---------------------------------------------------------
 
 
+def _ensure_repo(conn: Connection) -> None:
+    """Clone the repo on first run, fetch on every run. Idempotent."""
+    conn.run(f"test -d {REPO_DIR}/.git || git clone {GIT_REPO} {REPO_DIR}")
+    conn.run(f"git -C {REPO_DIR} fetch --prune origin")
+
+
+def _ensure_tailwind(conn: Connection) -> None:
+    """Download the pinned Tailwind binary if it is missing. Reused across deploys."""
+    conn.run(f"mkdir -p {SHARED_BIN}")
+    conn.run(
+        f"test -x {SHARED_BIN}/tailwindcss || "
+        f"(curl -fsSL -o {SHARED_BIN}/tailwindcss {TAILWIND_URL} && "
+        f"chmod +x {SHARED_BIN}/tailwindcss)"
+    )
+
+
+def _ensure_venv(conn: Connection) -> None:
+    """Create the shared venv if it does not exist yet."""
+    conn.run(f"test -d {SHARED_VENV} || python3 -m venv {SHARED_VENV}")
+
+
+def _restart_services(conn: Connection) -> None:
+    """Restart the API and worker on the current release.
+
+    `restart` re-resolves the `current` symlink, so the new code loads. SIGTERM
+    is graceful for both: gunicorn drains in-flight requests and the worker
+    finishes its current job before exiting (bounded by TimeoutStopSec in the
+    units), so a deploy never severs a live request or job mid-flight.
+    """
+    conn.run("sudo systemctl restart pave-api pave-worker")
+
+
 @task
 def deploy(c):
-    """Release-dir deploy: validate, ship, migrate, flip symlink, health check.
+    """Validate, snapshot origin/<branch>, build, migrate, flip symlink, health check.
 
-    On a failed post-flip health check the previous release is restored
-    automatically (see rollback).
+    The snapshot is cut from origin/<branch> on the server, the CSS is built
+    there, and the shared venv is updated in place. On a failed post-flip health
+    check the previous release is restored automatically (see rollback).
     """
     validate(c)
 
-    # Preflight: the release is named after the HEAD commit, so refuse to ship
-    # anything that would make that name lie. A dirty tree means the rsynced
-    # working dir differs from the commit; an unpushed HEAD means shipping a
-    # commit no teammate or CI has ever seen.
+    t = _target()
+    branch = t["branch"]
+    # The server ships origin/<branch>, so local HEAD must equal that branch tip
+    # and the tree must be clean, or it would deploy something other than what
+    # validate just tested. Fetch first so the comparison is against the remote.
+    c.run("git fetch origin", hide=True)
     if c.run("git status --porcelain", hide=True).stdout.strip():
         sys.exit("deploy aborted: working tree is dirty; commit or stash first")
-    if not c.run(
-        "git branch -r --contains HEAD", hide=True, warn=True
-    ).stdout.strip():
-        sys.exit("deploy aborted: HEAD is not on origin; push it first")
+    local_head = c.run("git rev-parse HEAD", hide=True).stdout.strip()
+    remote_head = c.run(
+        f"git rev-parse origin/{branch}", hide=True, warn=True
+    ).stdout.strip()
+    if local_head != remote_head:
+        sys.exit(
+            f"deploy aborted: HEAD is not the tip of origin/{branch}; "
+            f"push it (or switch branch) so the server ships what you tested"
+        )
 
-    t = _target()
     conn = _conn()
+    _ensure_repo(conn)
+    _ensure_tailwind(conn)
+    _ensure_venv(conn)
+
     release = c.run("vrk epoch --now", hide=True).stdout.strip()
-    short_hash = c.run("git rev-parse --short HEAD", hide=True).stdout.strip()
+    short_hash = conn.run(
+        f"git -C {REPO_DIR} rev-parse --short origin/{branch}", hide=True
+    ).stdout.strip()
     release_name = f"{release}-{short_hash}"
     release_path = f"{RELEASES_DIR}/{release_name}"
 
+    # `git archive` exports only tracked files and never the .git dir, so
+    # gitignored secrets, the dev db, and caches cannot ride along.
     conn.run(f"mkdir -p {release_path}")
-    # Honour .gitignore so local .env secrets, the dev sqlite db, and tool
-    # caches never ship; --delete keeps a reused release dir from carrying
-    # stale files. static/css/app.css is a gitignored build artifact that
-    # validate just rebuilt, so force-include it (the include rule sits ahead
-    # of the .gitignore filter, and first match wins) - the server has no
-    # Tailwind to build it.
-    c.run(
-        f"rsync -az --filter='+ /static/css/app.css' --filter=':- .gitignore' "
-        f"--exclude .git --delete ./ "
-        f"{DEPLOY_USER}@{t['host']}:{release_path}/"
-    )
-    with conn.cd(release_path):
-        conn.run("python -m venv .venv")
-        conn.run(".venv/bin/pip install -q -r requirements.txt")
-        conn.run(".venv/bin/alembic upgrade head")
+    conn.run(f"git -C {REPO_DIR} archive origin/{branch} | tar -x -C {release_path}")
 
-    # Point this release's static/uploads at the persistent shared dir so
-    # user uploads (avatars) survive the next deploy instead of being wiped
-    # with the old release. .gitignore excludes static/uploads, so rsync never
-    # ships a real directory here to collide with the symlink.
+    # app.css is gitignored, so the snapshot has none: build it here.
+    conn.run(
+        f"{SHARED_BIN}/tailwindcss "
+        f"-i {release_path}/static/css/source.css "
+        f"-o {release_path}/static/css/app.css --minify"
+    )
+
+    # Update the shared venv, then migrate against the new code while the old
+    # release still serves traffic.
+    conn.run(f"{SHARED_VENV}/bin/pip install -q -r {release_path}/requirements.txt")
+    with conn.cd(release_path):
+        conn.run(f"{SHARED_VENV}/bin/alembic upgrade head")
+
+    # Persist user uploads across deploys: point the release at the shared dir.
     conn.run(f"mkdir -p {APP_DIR}/shared/uploads")
     conn.run(f"ln -sfn {APP_DIR}/shared/uploads {release_path}/static/uploads")
 
     conn.run(f"ln -sfn {release_path} {CURRENT}")
-    conn.run("sudo systemctl restart pave-api pave-worker")
+    _restart_services(conn)
 
     domain = t["domain"]
     health = c.run(
@@ -190,21 +259,18 @@ def deploy(c):
         rollback(c)
         sys.exit(f"deploy aborted: {domain} did not become healthy")
 
-    # The /health probe only covers the API. Confirm the worker is up too, so a
-    # crash-on-start (bad job import, missing env) cannot ship as a green deploy
-    # with a silently-dead job queue.
+    # /health only covers the API, so confirm the worker came up too: a
+    # crash-on-start must not ship green with a silently-dead job queue.
     worker = conn.run("systemctl is-active --quiet pave-worker", warn=True)
     if not worker.ok:
         print("worker is not active, rolling back")
         rollback(c)
         sys.exit("deploy aborted: pave-worker did not come up")
 
-    # Prune old releases now the new one is live and healthy. Release names are
-    # timestamp-prefixed, so a lexical sort is chronological; keep the newest
-    # KEEP_RELEASES (the live one plus rollback targets) and delete the rest.
+    # Prune to the newest KEEP_RELEASES. Names are timestamp-prefixed, so a
+    # lexical sort is chronological.
     conn.run(
-        f"ls -1d {RELEASES_DIR}/*/ | sort | head -n -{KEEP_RELEASES} | "
-        f"xargs -r rm -rf"
+        f"ls -1d {RELEASES_DIR}/*/ | sort | head -n -{KEEP_RELEASES} | xargs -r rm -rf"
     )
 
     _emit_deploy_event(release_name)
@@ -215,17 +281,34 @@ def deploy(c):
 def rollback(c):
     """Point `current` back at the previous release and restart services."""
     conn = _conn()
-    # Order by name, not mtime: release dirs are timestamp-prefixed, so a
-    # reverse name sort is the stable chronological order (rsync and restores
-    # rewrite mtimes, which would scramble `ls -t`). Second entry = previous.
+    # Order by name, not mtime: release names are timestamp-prefixed, so a
+    # reverse name sort is the stable chronological order (mtimes get rewritten
+    # by restores). Second entry = the previous release.
     previous = conn.run(
         f"ls -1d {RELEASES_DIR}/*/ | sort -r | sed -n 2p", hide=True
     ).stdout.strip()
     if not previous:
         sys.exit("no previous release to roll back to")
     conn.run(f"ln -sfn {previous.rstrip('/')} {CURRENT}")
-    conn.run("sudo systemctl restart pave-api pave-worker")
+    _restart_services(conn)
     print(f"rolled back to {previous}")
+
+
+@task(name="rebuild-venv")
+def rebuild_venv(c):
+    """Recreate the shared venv from scratch and reinstall the live release.
+
+    Deploys reuse one shared venv, so a removed or downgraded dependency leaves
+    its old packages behind. This blows the venv away and rebuilds it from the
+    current release's requirements, then restarts the services. Run it after a
+    deploy that dropped a dependency, or after a Python upgrade on the host.
+    """
+    conn = _conn()
+    conn.run(f"rm -rf {SHARED_VENV}")
+    conn.run(f"python3 -m venv {SHARED_VENV}")
+    conn.run(f"{SHARED_VENV}/bin/pip install -q -r {CURRENT}/requirements.txt")
+    _restart_services(conn)
+    print("rebuild-venv: shared venv recreated, services restarted")
 
 
 @task
@@ -276,7 +359,7 @@ def restore(c, path, yes=False):
     # Safety net: snapshot the current state before clobbering it.
     backup(c)
     conn.run(_with_env(f'gunzip -c {path} | psql --single-transaction "$DATABASE_URL"'))
-    conn.run("sudo systemctl restart pave-api pave-worker")
+    _restart_services(conn)
     print(f"restored from {path}")
 
 
@@ -350,9 +433,7 @@ def setup_auto_updates(c):
         "echo unattended-upgrades unattended-upgrades/enable_auto_updates "
         "boolean true | sudo debconf-set-selections"
     )
-    conn.run(
-        "sudo dpkg-reconfigure -f noninteractive unattended-upgrades"
-    )
+    conn.run("sudo dpkg-reconfigure -f noninteractive unattended-upgrades")
     print("auto-updates: unattended security upgrades enabled")
 
 
@@ -377,14 +458,36 @@ def setup_swap(c, size="2G"):
 
 @task(name="setup-log-rotation")
 def setup_log_rotation(c):
-    """Cap journald disk use so logs cannot fill the disk."""
+    """Cap journald disk use via a drop-in so logs cannot fill the disk.
+
+    The app logs to stdout, which systemd captures into journald, so log
+    retention is a journald setting, not the app's job. This installs
+    deploy/journald.conf as a drop-in (override the shipped limits by editing
+    that file and re-running). Requires a release to be live for {CURRENT}.
+    """
     conn = _conn()
+    conn.run("sudo mkdir -p /etc/systemd/journald.conf.d")
     conn.run(
-        "sudo sed -i 's/^#\\?SystemMaxUse=.*/SystemMaxUse=500M/' "
-        "/etc/systemd/journald.conf"
+        f"sudo cp {CURRENT}/deploy/journald.conf /etc/systemd/journald.conf.d/pave.conf"
     )
     conn.run("sudo systemctl restart systemd-journald")
-    print("log-rotation: journald capped at 500M")
+    print("log-rotation: journald limits installed from deploy/journald.conf")
+
+
+@task(name="setup-server")
+def setup_server(c):
+    """Bootstrap a fresh host: clone the repo, fetch Tailwind, build the venv.
+
+    Idempotent, and `deploy` does all three on demand anyway, so this is just a
+    convenience for prepping a box before the first deploy. It does not need a
+    release to exist yet (unlike the other setup-* tasks).
+    """
+    conn = _conn()
+    conn.run(f"mkdir -p {RELEASES_DIR} {APP_DIR}/shared")
+    _ensure_repo(conn)
+    _ensure_tailwind(conn)
+    _ensure_venv(conn)
+    print("setup-server: repo cloned, Tailwind fetched, shared venv ready")
 
 
 @task(name="setup-monitoring")

@@ -95,7 +95,7 @@ Five processes, four of which are managed by systemd: `nginx`, `pave-api` (Gunic
 
 ## SSH + systemd, not Docker
 
-**Decision.** Deploy is `rsync` over SSH plus a systemd restart. Release directories with an atomic symlink flip. No containers.
+**Decision.** Deploy is a server-side `git archive` snapshot over SSH plus a systemd restart. Release directories with an atomic symlink flip. No containers.
 
 **Why.** A single-app deployment does not benefit enough from containers to justify the operational surface (image build, registry, orchestrator, secrets at runtime, image vulnerability scanning). systemd already solves restart-on-crash, log capture, dependency ordering, and resource limits. The deploy code is one short Python file you can read end to end.
 

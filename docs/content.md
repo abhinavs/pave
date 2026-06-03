@@ -247,10 +247,11 @@ saving the markdown file and refreshing the browser is enough.
 
 ## How content is deployed
 
-Content is part of the repo. It is rsynced to the server along with
-everything else when `fab production deploy` runs. There is no separate
-publish step, no content build, no cache invalidation to wait on. Once the
-release symlink flips, the new files are live.
+Content is part of the repo. It ships in the release snapshot along with
+everything else when `fab production deploy` runs (it is tracked, so
+`git archive` includes it). There is no separate publish step, no content
+build, no cache invalidation to wait on. Once the release symlink flips, the
+new files are live.
 
 If you only changed a markdown file, the deploy still runs the full
 `fab validate` (ruff, mypy, tests) before shipping. That is intentional:

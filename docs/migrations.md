@@ -120,8 +120,8 @@ releases/
 
 `fab deploy` (see `fabfile.py`) does this, in order:
 
-1. rsync the new code to a fresh release directory
-2. create a venv, install requirements
+1. snapshot the new code (`git archive origin/<branch>`) into a fresh release directory
+2. build the CSS and update the shared venv with any new requirements
 3. run `alembic upgrade head` from the new release directory
 4. flip the `current` symlink to the new release
 5. restart `pave-api` and `pave-worker`
@@ -245,14 +245,17 @@ You do not run them. `fab deploy` does, inside the new release directory,
 before the symlink flips:
 
 ```python
+conn.run(f"{SHARED_VENV}/bin/pip install -q -r {release_path}/requirements.txt")
 with conn.cd(release_path):
-    conn.run("python -m venv .venv")
-    conn.run(".venv/bin/pip install -q -r requirements.txt")
-    conn.run(".venv/bin/alembic upgrade head")
+    conn.run(f"{SHARED_VENV}/bin/alembic upgrade head")
 
 conn.run(f"ln -sfn {release_path} {CURRENT}")
 conn.run("sudo systemctl restart pave-api pave-worker")
 ```
+
+The venv is shared across releases (see [deploy.md](deploy.md)), so the install
+is an in-place update of `/srv/pave/shared/venv`, not a fresh build per release.
+The migration still runs against the new release's code, before the flip.
 
 You should see, in the deploy output:
 

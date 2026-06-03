@@ -35,7 +35,7 @@ Once a server is prepared and `.env.production` is on it:
 fab production deploy
 ```
 
-That command runs the pre-deploy gate (env schema validation, CSS build, migrations, tests, type check), rsyncs a new release directory, runs migrations on the server, atomically flips the `current` symlink, restarts systemd, and probes `/health`. If the health check fails, it rolls back automatically before the command exits.
+That command runs the pre-deploy gate (env schema validation, CSS build, migrations, tests, type check), snapshots a new release on the server from `origin/main` (`git archive`), builds the CSS and updates the shared venv there, runs migrations, atomically flips the `current` symlink, restarts systemd, and probes `/health`. If the health check fails, it rolls back automatically before the command exits.
 
 The full walkthrough, including fresh-VPS prep, is in [docs/deploy.md](docs/deploy.md). Plan on 15 minutes from a clean Ubuntu host to a live, TLS-terminated app.
 
