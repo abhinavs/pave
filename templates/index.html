@@ -2,13 +2,21 @@
 {% block title %}{{ app_name }} - a paved production FastAPI starter{% endblock %}
 
 {% block content %}
-  {# Hero. The big serif headline is the one place on the landing page where
-     Newsreader earns its keep; everything else stays on Inter so the page
-     reads like an application, not a brochure. #}
-  <section class="space-y-10 py-10 sm:py-16">
+  {# ----------------------------------------------------------------------
+     The landing page reads as an editorial spread: a serif display voice
+     (Newsreader) for the headlines, Inter for body, IBM Plex Mono for the
+     eyebrow kickers and section markers. Sections are separated by full
+     hairline rules so the page scans top to bottom like a printed page.
+     Everything traces to a design token - no freelance colours, no second
+     accent. The logged-in branch trades the marketing pitch for a short
+     "where to next" deck; the anonymous branch is the sales surface.
+     ---------------------------------------------------------------------- #}
+
+  {# ============================ HERO ============================ #}
+  <section class="py-10 sm:py-16">
     <div class="flex flex-col items-start gap-6 text-left">
-      <span class="inline-flex h-12 w-12 items-center justify-center rounded-md border border-border bg-muted/50 text-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="h-7 w-7" aria-hidden="true">
+      <span class="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border bg-muted/50 text-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" class="h-6 w-6" aria-hidden="true">
           <polygon points="232 192 160 64 96 64 24 192 232 192" opacity="0.2" fill="currentColor"/>
           <line x1="96" y1="64" x2="24" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
           <line x1="160" y1="64" x2="232" y2="192" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
@@ -19,26 +27,31 @@
         </svg>
       </span>
 
-      <h1 class="max-w-3xl font-serif text-4xl font-medium leading-tight tracking-tight text-foreground sm:text-5xl">
+      <p class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        Full-stack Python &middot; no React required
+      </p>
+
+      <h1 class="max-w-3xl font-serif text-4xl font-medium leading-[1.1] tracking-tight text-foreground sm:text-5xl">
         {% if user %}
           Welcome back, {{ user.name }}.
         {% else %}
-          The boring parts of a production FastAPI app, already done.
+          The boring parts of a production
+          <span class="text-primary">FastAPI</span> app, already done.
         {% endif %}
       </h1>
 
-      <p class="max-w-2xl text-base text-muted-foreground sm:text-lg">
+      <p class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
         {% if user %}
           The webhook demo, the Soniq worker, the auth flow, the design
-          system - all wired and waiting. Hit the gallery or open the demo
-          and start cutting toward the part that is actually your idea.
+          system - all wired and waiting. Open the demo or browse the
+          component gallery, then start cutting toward the part that is
+          actually your idea.
         {% else %}
-          Pave is the starter you would have built on weekend three, if you
-          had three weekends. Async SQLAlchemy 2.0, server-rendered HTMX,
-          email and OAuth login on a revocable session store, a Soniq
-          worker, a ruff + strict mypy deploy gate, and one Fabric command
-          that ships to a real Linux box over SSH. No Docker. No Node at
-          runtime. Just enough Python to read in an afternoon.
+          Pave is a production-shaped FastAPI starter, with the plumbing
+          already done. Async SQLAlchemy 2.0, server-rendered HTMX, email and
+          OAuth login on a revocable session store, a Soniq worker, and one
+          Fabric command that ships to a real Linux box over SSH. Clone it
+          Friday, deploy your own idea by Sunday.
         {% endif %}
       </p>
 
@@ -67,140 +80,269 @@
           >
         {% endif %}
       </div>
+
+      {# Spec strip. Four claims the rest of the page backs up, set in mono
+         and divided by hairlines so they read as a technical fact sheet,
+         not marketing. #}
+      <dl class="mt-4 flex flex-wrap gap-x-6 gap-y-3 font-mono text-xs text-muted-foreground">
+        {% for fact in [
+          {"k": "Runtime", "v": "No Docker, no Node"},
+          {"k": "Database", "v": "Async SQLAlchemy 2.0"},
+          {"k": "Deploy", "v": "One SSH command"},
+          {"k": "Gate", "v": "ruff + strict mypy"},
+        ] %}
+          <div class="flex items-baseline gap-2 border-l border-border pl-3">
+            <dt class="uppercase tracking-[0.14em] text-muted-foreground/70">{{ fact.k }}</dt>
+            <dd class="text-foreground">{{ fact.v }}</dd>
+          </div>
+        {% endfor %}
+      </dl>
     </div>
   </section>
 
-  {# Onboarding checklist. Only rendered when a logged-in user still has
-     a step pending - the home route filters out anonymous visitors and
-     fully-onboarded users, so the partial does not need to defend
-     itself. The banner sits between the hero (which welcomes the user)
-     and the feature grid (which sells the rest of the box). #}
+  {# Onboarding checklist. Only rendered when a logged-in user still has a
+     step pending - the home route filters out anonymous visitors and
+     fully-onboarded users, so the partial does not need to defend itself. #}
   {% if onboarding %}
     {% include "_partials/onboarding.html" %}
   {% endif %}
 
-  {# Feature grid. Six tiles, each one a piece of the box that is already
-     wired - this is the answer to "what do I get when I clone this." #}
-  <section class="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
-    {% set _features = [
-      {
-        "title": "Async SQLAlchemy 2.0",
-        "body": "Request-scoped sessions via Depends(get_db). Alembic migrations. No legacy Query API.",
-      },
-      {
-        "title": "Session auth with OAuth",
-        "body": "Email + password, Google, GitHub. Email confirmation, password reset, all wired.",
-      },
-      {
-        "title": "HTMX + Alpine, no SPA",
-        "body": "Server-rendered Jinja with HTMX partials. Forms render inline errors without a 422 round-trip.",
-      },
-      {
-        "title": "Background jobs with Soniq",
-        "body": "Async jobs receive IDs, fetch their own data, and are idempotent by convention.",
-      },
-      {
-        "title": "Ruff + strict mypy",
-        "body": "One linter, one formatter, mypy strict on app/. Wired into the deploy gate, run with one command locally.",
-      },
-      {
-        "title": "Fabric deploy gate",
-        "body": "fab validate runs env, CSS, migrations, ruff, mypy, and the full pytest suite before any SSH.",
-      },
-    ] %}
-    {% for f in _features %}
-      <article class="space-y-2 bg-background p-6">
-        <h3 class="text-sm font-semibold text-foreground">{{ f.title }}</h3>
-        <p class="text-sm text-muted-foreground">{{ f.body }}</p>
-      </article>
-    {% endfor %}
-  </section>
+  {% if not user %}
+    {# ====================== 01 - QUICKSTART ====================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">01</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Clone to localhost
+        </span>
+      </div>
 
-  {# Stack rationale. The feature grid above lists what is wired; this
-     section answers the obvious follow-up - why these picks and not the
-     defaults. Three short arguments, one per editorial concern. #}
-  <section class="mt-20 space-y-6">
-    <div class="space-y-2">
-      <h2 class="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
-        Opinionated where it matters, plain everywhere else.
+      <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+        <div class="space-y-3">
+          <h2 class="font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            Three commands to a running app.
+          </h2>
+          <p class="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+            No build step to learn, no compose file to debug. <code class="font-mono text-[0.85em] text-foreground">pave setup</code>
+            creates the database, runs the migrations, and lays down the
+            Soniq tables. <code class="font-mono text-[0.85em] text-foreground">pave dev</code> starts the server and the
+            Tailwind watcher together. You are looking at real routes, not a
+            placeholder, in under a minute.
+          </p>
+        </div>
+
+        {# Terminal card. A flat surface with three window dots and a mono
+           transcript. Prompts are muted, commands are foreground, the
+           result line picks up the primary accent. #}
+        <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
+            <span class="ml-2 font-mono text-xs text-muted-foreground">bash</span>
+          </div>
+          <pre class="overflow-x-auto p-4 font-mono text-[0.82rem] leading-relaxed"><code><span class="text-muted-foreground">$</span> <span class="text-foreground">git clone https://github.com/you/pave my-app</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">cd my-app && pave setup</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">pave dev</span>
+<span class="text-primary">&rarr;</span> <span class="text-muted-foreground">serving on</span> <span class="text-foreground">http://localhost:8000</span>
+<span class="text-muted-foreground"># when you are ready</span>
+<span class="text-muted-foreground">$</span> <span class="text-foreground">fab production deploy</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    {# ===================== 02 - WHAT'S WIRED ===================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">02</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          What's in the box
+        </span>
+      </div>
+
+      <h2 class="mt-6 max-w-2xl font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+        Six things you would have wired by hand. Already wired.
       </h2>
-      <p class="max-w-2xl text-sm text-muted-foreground sm:text-base">
-        Every choice here is small enough to undo in an afternoon, and most
-        of them are picked because the popular alternative trades clarity
-        for a feature you do not need on day one.
-      </p>
-    </div>
 
-    {% set _picks = [
-      {
-        "title": "Server-rendered HTML, HTMX for the wires.",
-        "body": "No SPA build step, no JSON-everywhere overhead. Jinja renders the page, HTMX swaps the fragments that actually need to move. Forms render their own validation errors inline at 200, the way they did before we all forgot.",
-      },
-      {
-        "title": "A database-backed session, not a signed cookie.",
-        "body": "The cookie is opaque; only its sha256 lives on disk. You can list every device a user is logged into, kill a specific one, and revoke them all on a password reset. Signed cookies cannot do that without rotating the secret.",
-      },
-      {
-        "title": "Fabric ships the box, no Docker required.",
-        "body": "One `fab production deploy` runs ruff, mypy, the full test suite, the migration plan, and the env schema check before any SSH. The release lands as a symlink flip on a real Linux host. Rollback is the same flip in reverse.",
-      },
-    ] %}
-    <ul class="space-y-4">
-      {% for p in _picks %}
-        <li class="rounded-lg border border-border bg-card p-5">
-          <p class="text-sm font-semibold text-foreground sm:text-base">{{ p.title }}</p>
-          <p class="mt-1 text-sm text-muted-foreground">{{ p.body }}</p>
-        </li>
-      {% endfor %}
-    </ul>
-  </section>
+      <div class="mt-8 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+        {% set _features = [
+          {
+            "n": "01",
+            "title": "Async SQLAlchemy 2.0",
+            "body": "Request-scoped sessions via Depends(get_db). Alembic migrations on async engines. No legacy Query API anywhere.",
+          },
+          {
+            "n": "02",
+            "title": "Session auth with OAuth",
+            "body": "Email + password, Google, and GitHub. Confirmation, password reset, and a revocable session store - all flows wired.",
+          },
+          {
+            "n": "03",
+            "title": "HTMX + Alpine, no SPA",
+            "body": "Server-rendered Jinja with HTMX partials. Forms render inline errors at 200, no 422 round-trip, no JSON-everywhere.",
+          },
+          {
+            "n": "04",
+            "title": "Background jobs with Soniq",
+            "body": "Jobs receive IDs, fetch their own data, and stay idempotent by convention. Runs on the Postgres you already have.",
+          },
+          {
+            "n": "05",
+            "title": "Ruff + strict mypy",
+            "body": "One linter, one formatter, mypy strict on app/. Run it with one command locally, enforced again in the deploy gate.",
+          },
+          {
+            "n": "06",
+            "title": "Fabric deploy gate",
+            "body": "fab validate runs env, CSS, migrations, ruff, mypy, and the full pytest suite before a single byte reaches SSH.",
+          },
+        ] %}
+        {% for f in _features %}
+          <article class="space-y-2 bg-background p-6">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs text-primary">{{ f.n }}</span>
+              <h3 class="text-sm font-semibold text-foreground">{{ f.title }}</h3>
+            </div>
+            <p class="text-sm leading-relaxed text-muted-foreground">{{ f.body }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
 
-  {# Design system pointer. A three-tier palette swatch and a link into
-     the gallery - the gallery is where the actual components live, so we
-     keep this brief and hand off. #}
-  <section class="mt-16 space-y-6 rounded-lg border border-border bg-muted/30 p-6 sm:p-8">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-      <div class="space-y-1">
-        <h2 class="font-serif text-2xl font-medium tracking-tight text-foreground">
-          A design system, not a Tailwind grab bag.
+    {# ==================== 03 - STACK RATIONALE ==================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">03</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Why these picks
+        </span>
+      </div>
+
+      <div class="mt-6 space-y-2">
+        <h2 class="max-w-2xl font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+          Opinionated where it matters, plain everywhere else.
         </h2>
-        <p class="max-w-2xl text-sm text-muted-foreground">
-          Three palette tiers, four semantic colours, two typefaces, one
-          mono. Every component traces to a token in
-          <code class="font-mono text-xs">static/css/source.css</code> - no
-          freelance hex values, no surprise font weight.
+        <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Every choice here is small enough to undo in an afternoon, and
+          most of them are picked because the popular alternative trades
+          clarity for a feature you do not need on day one.
         </p>
       </div>
-      <a
-        href="/components"
-        class="text-sm font-medium text-link underline-offset-4 hover:underline"
-        >See the gallery -&gt;</a
-      >
-    </div>
 
-    <div class="grid gap-3 sm:grid-cols-3">
-      {% for tier in [
-        {"name": "Primary", "swatch": "bg-primary-500", "label": "Actions, links, focus rings."},
-        {"name": "Secondary", "swatch": "bg-secondary-500", "label": "Support, borders, secondary controls."},
-        {"name": "Tertiary", "swatch": "bg-tertiary-500", "label": "Surfaces, dividers, muted text."},
-      ] %}
-        <div class="space-y-2 rounded-md border border-border bg-background p-4">
-          <div class="h-12 w-full rounded {{ tier.swatch }}"></div>
-          <div>
-            <p class="text-sm font-medium text-foreground">{{ tier.name }}</p>
-            <p class="text-xs text-muted-foreground">{{ tier.label }}</p>
+      <dl class="mt-8 divide-y divide-border border-y border-border">
+        {% set _picks = [
+          {
+            "label": "Rendering",
+            "title": "Server-rendered HTML, HTMX for the wires.",
+            "body": "No SPA build step, no JSON-everywhere overhead. Jinja renders the page; HTMX swaps the fragments that actually need to move. Forms render their own validation errors inline at 200, the way they did before we all forgot.",
+          },
+          {
+            "label": "Sessions",
+            "title": "A database-backed session, not a signed cookie.",
+            "body": "The cookie is opaque; only its sha256 lives on disk. You can list every device a user is logged into, kill a specific one, and revoke them all on a password reset. Signed cookies cannot do that without rotating the secret.",
+          },
+          {
+            "label": "Deploy",
+            "title": "Fabric ships the box, no Docker required.",
+            "body": "One fab production deploy runs ruff, mypy, the full test suite, the migration plan, and the env schema check before any SSH. The release lands as a symlink flip on a real Linux host. Rollback is the same flip in reverse.",
+          },
+        ] %}
+        {% for p in _picks %}
+          <div class="grid gap-2 py-6 sm:grid-cols-[140px_1fr] sm:gap-6">
+            <dt class="font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              {{ p.label }}
+            </dt>
+            <dd class="space-y-1.5">
+              <p class="text-base font-semibold text-foreground">{{ p.title }}</p>
+              <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{{ p.body }}</p>
+            </dd>
           </div>
-        </div>
-      {% endfor %}
-    </div>
-  </section>
+        {% endfor %}
+      </dl>
+    </section>
 
-  {# Dev-only error preview. Mounted by `home.py` only when settings.debug
-     is true and the matching /dev/preview/* routes are registered. The
-     panel renders nothing in production - the markup is gated here, not
-     just hidden with CSS. #}
+    {# ==================== 04 - DESIGN SYSTEM ==================== #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">04</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          The look
+        </span>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div class="space-y-2">
+          <h2 class="max-w-2xl font-serif text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+            A design system, not a Tailwind grab bag.
+          </h2>
+          <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            Three palette tiers, four semantic colours, two typefaces and one
+            mono. Every component traces to a token in
+            <code class="font-mono text-xs text-foreground">static/css/source.css</code> -
+            no freelance hex values, no surprise font weight, dark mode first.
+          </p>
+        </div>
+        <a
+          href="/components"
+          class="shrink-0 font-mono text-xs uppercase tracking-[0.14em] text-link underline-offset-4 hover:underline"
+          >See the gallery &rarr;</a
+        >
+      </div>
+
+      <div class="mt-8 grid gap-3 sm:grid-cols-3">
+        {% for tier in [
+          {"name": "Primary", "swatch": "bg-primary-500", "label": "Actions, links, focus rings."},
+          {"name": "Secondary", "swatch": "bg-secondary-500", "label": "Support, borders, secondary controls."},
+          {"name": "Tertiary", "swatch": "bg-tertiary-500", "label": "Surfaces, dividers, muted text."},
+        ] %}
+          <div class="space-y-3 rounded-md border border-border bg-card p-4">
+            <div class="h-12 w-full rounded {{ tier.swatch }}"></div>
+            <div>
+              <p class="text-sm font-medium text-foreground">{{ tier.name }}</p>
+              <p class="text-xs text-muted-foreground">{{ tier.label }}</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% else %}
+    {# ================ LOGGED-IN: WHERE TO NEXT ================ #}
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex items-center gap-3">
+        <span class="font-mono text-xs text-primary">&rarr;</span>
+        <span class="h-px w-8 bg-border"></span>
+        <span class="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          Where to next
+        </span>
+      </div>
+
+      <div class="mt-8 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
+        {% for card in [
+          {"href": "/webhooks/", "title": "The webhook demo", "body": "Send a payload, watch the Soniq worker pick it up, and see the SSE status flip live. The reference implementation for every component token."},
+          {"href": "/components", "title": "Component gallery", "body": "Every shared partial in every variant - buttons, tables, toasts, modals - rendered in one place with the markup to copy."},
+          {"href": "/account", "title": "Your account", "body": "Update your profile, manage active sessions across devices, and revoke any one of them without touching the others."},
+        ] %}
+          <a href="{{ card.href }}" class="group space-y-2 bg-background p-6 transition-colors hover:bg-accent">
+            <h3 class="text-sm font-semibold text-foreground">
+              {{ card.title }}
+              <span class="text-primary transition-transform group-hover:translate-x-0.5">&rarr;</span>
+            </h3>
+            <p class="text-sm leading-relaxed text-muted-foreground">{{ card.body }}</p>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {# Dev-only error preview. Mounted by home.py only when settings.debug is
+     true and the matching /dev/preview/* routes are registered. The panel
+     renders nothing in production - the markup is gated here, not hidden. #}
   {% if debug %}
-    <section class="mt-16 rounded-lg border border-dashed border-border bg-muted/40 p-5">
+    <section class="mt-12 rounded-lg border border-dashed border-border bg-muted/40 p-5">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="space-y-1">
           <p class="text-sm font-semibold text-foreground">
@@ -213,13 +355,19 @@
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
+          {# hx-boost is on <body>, so these would otherwise be AJAX-swapped.
+             HTMX will not swap a 4xx/5xx response, so a boosted click would
+             silently do nothing. Opt out so the browser does a full
+             navigation and actually renders the error page. #}
           <a
             href="/dev/preview/404"
+            hx-boost="false"
             class="inline-flex h-8 items-center rounded-md border border-border bg-background px-3 text-xs font-medium transition-colors hover:bg-accent"
             >Preview 404</a
           >
           <a
             href="/dev/preview/500"
+            hx-boost="false"
             class="inline-flex h-8 items-center rounded-md border border-destructive/30 bg-background px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
             >Trigger 500</a
           >
@@ -230,26 +378,29 @@
 
   {# Closing CTA. The page has earned a second ask by here. #}
   {% if not user %}
-    <section class="mt-16 flex flex-col items-start gap-4 rounded-lg border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-      <div class="space-y-1">
-        <p class="font-serif text-xl font-medium tracking-tight text-foreground">
-          Ready to clone something that already works?
-        </p>
-        <p class="text-sm text-muted-foreground">
-          Sign up to poke at the demo, or read the source on GitHub first.
-        </p>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <a
-          href="/auth/signup"
-          class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >Create an account</a
-        >
-        <a
-          href="/about"
-          class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
-          >About Pave</a
-        >
+    <section class="border-t border-border py-12 sm:py-16">
+      <div class="flex flex-col items-start gap-5 rounded-lg border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div class="space-y-1.5">
+          <p class="font-serif text-2xl font-medium tracking-tight text-foreground">
+            Ready to clone something that already works?
+          </p>
+          <p class="text-sm leading-relaxed text-muted-foreground">
+            Create an account to poke at the live demo, or read the source on
+            GitHub first. Both take about a minute.
+          </p>
+        </div>
+        <div class="flex shrink-0 flex-wrap gap-3">
+          <a
+            href="/auth/signup"
+            class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >Create an account</a
+          >
+          <a
+            href="/about"
+            class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
+            >About Pave</a
+          >
+        </div>
       </div>
     </section>
   {% endif %}
