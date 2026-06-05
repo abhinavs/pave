@@ -15,108 +15,101 @@
      ---------------------------------------------------------------------- #}
 
   {# ============================ HERO ============================ #}
-  <section class="relative overflow-hidden py-10 sm:py-16">
-    {# Soft accent glow behind the headline - the one decorative flourish on
-       the page. Clipped by the section so it never spills a scrollbar. #}
+  {# Statement-first hero in the zed.dev idiom: the headline owns the centre,
+     a single product canvas (clone to deploy) drops in full width beneath it
+     with the accent glow behind the canvas instead of the type, and a
+     hairline grid gives the surface a flat, engineered floor. Still on
+     tokens, still serif display, still violet - just recomposed. #}
+  <section class="relative overflow-hidden py-14 sm:py-20">
+    {# Engineered grid floor. Hairlines drawn from the border token, masked to
+       a soft radial so it fades out before it reaches the page edges and never
+       reads as a hard box. Decorative only. #}
     <div
-      class="pointer-events-none absolute -top-32 left-1/2 -z-10 h-72 w-[44rem] max-w-full -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]"
+      class="pointer-events-none absolute inset-0 -z-10 opacity-[0.5] [mask-image:radial-gradient(ellipse_60%_55%_at_50%_0%,black,transparent_75%)]"
+      style="background-image: linear-gradient(to right, var(--color-border) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border) 1px, transparent 1px); background-size: 56px 56px;"
       aria-hidden="true"
     ></div>
 
-    <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-      {# ---- Left: the pitch ---- #}
-      <div class="flex flex-col items-start gap-6 text-left">
-        <a
-          href="https://github.com/abhinavs/pave"
-          target="_blank"
-          rel="noopener"
-          class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
-        >
-          <span class="relative flex h-1.5 w-1.5">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
-          </span>
-          Open source &middot; Full-stack Python &middot; no React
-          {% with name="arrow-right", class="h-3 w-3" %}{% include "_components/icon.html" %}{% endwith %}
-        </a>
+    {# ---- The pitch, centred ---- #}
+    <div class="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
+      <a
+        href="https://github.com/abhinavs/pave"
+        target="_blank"
+        rel="noopener"
+        class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+      >
+        <span class="relative flex h-1.5 w-1.5">
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+          <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
+        </span>
+        Open source &middot; Full-stack Python &middot; no React
+        {% with name="arrow-right", class="h-3 w-3" %}{% include "_components/icon.html" %}{% endwith %}
+      </a>
 
-        <h1 class="max-w-2xl font-serif text-4xl font-medium leading-[1.08] tracking-tight text-foreground sm:text-5xl">
-          {% if user %}
-            Welcome back, {{ user.name }}.
-          {% else %}
-            The boring parts of a production
-            <span class="text-primary">FastAPI</span> app, already done.
-          {% endif %}
-        </h1>
+      <h1 class="font-serif text-4xl font-medium leading-[1.05] tracking-tight text-foreground sm:text-6xl">
+        {% if user %}
+          Welcome back, {{ user.name }}.
+        {% else %}
+          The boring parts of a production
+          <span class="text-primary">FastAPI</span> app, already done.
+        {% endif %}
+      </h1>
 
-        <p class="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          {% if user %}
-            The live demo, the Soniq worker, the auth flow, the design
-            system - all wired and waiting. Open the demo or browse the
-            component gallery, then start cutting toward the part that is
-            actually your idea.
-          {% else %}
-            Pave is a production-shaped FastAPI starter with the plumbing
-            already done: async SQLAlchemy 2.0, server-rendered HTMX, OAuth
-            on a revocable session store, a Soniq job queue on Postgres, a
-            real test suite, and one command that ships to a Linux box over
-            SSH. Clone it Friday, deploy your own idea by Sunday.
-          {% endif %}
-        </p>
+      <p class="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+        {% if user %}
+          The live demo, the Soniq worker, the auth flow, the design
+          system - all wired and waiting. Open the demo or browse the
+          component gallery, then start cutting toward the part that is
+          actually your idea.
+        {% else %}
+          Pave is a production-shaped FastAPI starter with the plumbing
+          already done: async SQLAlchemy 2.0, server-rendered HTMX, OAuth
+          on a revocable session store, a Soniq job queue on Postgres, a
+          real test suite, and one command that ships to a Linux box over
+          SSH. Clone it Friday, deploy your own idea by Sunday.
+        {% endif %}
+      </p>
 
-        <div class="flex flex-wrap items-center gap-3">
-          {% if user %}
-            <a
-              href="/webhooks/"
-              class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              >Open the live demo</a
-            >
-            <a
-              href="/components"
-              class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
-              >Browse components</a
-            >
-          {% else %}
-            <a
-              href="/components"
-              class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              >Browse components</a
-            >
-            <a
-              href="https://github.com/abhinavs/pave"
-              target="_blank"
-              rel="noopener"
-              class="inline-flex h-10 items-center gap-2 rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
-            >
-              {% with name="github", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
-              Star on GitHub
-            </a>
-          {% endif %}
-        </div>
-
-        {# Spec strip. Four claims the rest of the page backs up, laid out as
-           an even grid of stat cells - label stacked over value - so the
-           columns line up instead of drifting on a wrapping flex row. #}
-        <dl class="mt-1 grid w-full max-w-xl grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
-          {% for fact in [
-            {"k": "Runtime", "v": "No Docker, no Node"},
-            {"k": "Database", "v": "SQLAlchemy 2.0"},
-            {"k": "Queue", "v": "Soniq on Postgres"},
-            {"k": "Deploy", "v": "One SSH command"},
-          ] %}
-            <div class="bg-background px-4 py-3">
-              <dt class="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
-                {{ fact.k }}
-              </dt>
-              <dd class="mt-1 text-sm font-medium text-foreground">{{ fact.v }}</dd>
-            </div>
-          {% endfor %}
-        </dl>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        {% if user %}
+          <a
+            href="/webhooks/"
+            class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >Open the live demo</a
+          >
+          <a
+            href="/components"
+            class="inline-flex h-10 items-center rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
+            >Browse components</a
+          >
+        {% else %}
+          <a
+            href="/components"
+            class="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >Browse components</a
+          >
+          <a
+            href="https://github.com/abhinavs/pave"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex h-10 items-center gap-2 rounded-md border border-border px-5 text-sm font-medium transition-colors hover:bg-accent"
+          >
+            {% with name="github", class="h-4 w-4" %}{% include "_components/icon.html" %}{% endwith %}
+            Star on GitHub
+          </a>
+        {% endif %}
       </div>
+    </div>
 
-      {# ---- Right: clone to deploy, in one card. The whole loop - from an
-         empty directory to a live box - in six lines. Prompts are muted,
-         commands foreground, the result line picks up the primary accent. ---- #}
+    {# ---- Product canvas: clone to deploy, in one card, centre stage. The
+       whole loop - from an empty directory to a live box - in six lines. The
+       accent glow lives behind this panel now, so the colour pools under the
+       product the way it does on zed.dev, not under the type. ---- #}
+    <div class="relative mx-auto mt-12 max-w-3xl sm:mt-14">
+      <div
+        class="pointer-events-none absolute -inset-x-8 -top-10 -z-10 h-48 rounded-full bg-primary/15 blur-[120px]"
+        aria-hidden="true"
+      ></div>
       <div class="overflow-hidden rounded-lg border border-border bg-card shadow-lg">
         <div class="flex items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5">
           <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
@@ -124,7 +117,7 @@
           <span class="h-2.5 w-2.5 rounded-full bg-border-strong"></span>
           <span class="ml-2 font-mono text-xs text-muted-foreground">bash</span>
         </div>
-        <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed"><code><span class="text-muted-foreground">$</span> <span class="text-foreground">git clone https://github.com/abhinavs/pave my-app</span>
+        <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed sm:p-5"><code><span class="text-muted-foreground">$</span> <span class="text-foreground">git clone https://github.com/abhinavs/pave my-app</span>
 <span class="text-muted-foreground">$</span> <span class="text-foreground">cd my-app</span>
 <span class="text-muted-foreground">$</span> <span class="text-foreground">python3 -m venv .venv && source .venv/bin/activate</span>
 <span class="text-muted-foreground">$</span> <span class="text-foreground">pip install -e .</span>
@@ -135,6 +128,24 @@
 <span class="text-muted-foreground">$</span> <span class="text-foreground">fab production deploy</span></code></pre>
       </div>
     </div>
+
+    {# Spec strip. Four claims the rest of the page backs up, centred under the
+       canvas as an even grid of stat cells so the columns line up. #}
+    <dl class="mx-auto mt-8 grid w-full max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+      {% for fact in [
+        {"k": "Runtime", "v": "No Docker, no Node"},
+        {"k": "Database", "v": "SQLAlchemy 2.0"},
+        {"k": "Queue", "v": "Soniq on Postgres"},
+        {"k": "Deploy", "v": "One SSH command"},
+      ] %}
+        <div class="bg-background px-4 py-3 text-center sm:text-left">
+          <dt class="font-mono text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
+            {{ fact.k }}
+          </dt>
+          <dd class="mt-1 text-sm font-medium text-foreground">{{ fact.v }}</dd>
+        </div>
+      {% endfor %}
+    </dl>
   </section>
 
   {# Onboarding checklist. Only rendered when a logged-in user still has a
