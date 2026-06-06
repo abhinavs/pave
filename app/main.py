@@ -28,6 +28,29 @@ from app.settings import assert_secret_key_is_production_safe, settings
 
 log = structlog.get_logger()
 
+# Dev-only browser live-reload. arel watches the template, compiled-CSS, and
+# content paths and pushes a refresh over a websocket. Python edits are covered
+# for free: uvicorn's --reload restarts the worker, the arel client reconnects
+# afterwards and reloads the page. Built only under debug so production never
+# imports arel (a dev-only dependency) nor exposes the socket.
+hot_reload = None
+if settings.debug:
+    try:
+        import arel
+
+        hot_reload = arel.HotReload(
+            paths=[
+                arel.Path("templates"),
+                arel.Path("static/css/app.css"),
+                arel.Path("content"),
+            ]
+        )
+    except ImportError:
+        # arel ships in requirements-dev only. A production image running with
+        # DEBUG=true would not have it; degrade to no live-reload rather than
+        # refusing to boot.
+        log.warning("arel not installed; live-reload disabled")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -37,7 +60,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     log.info("startup", app=settings.app_name, version=settings.app_version)
     async with engine.begin():
         pass  # connection check
+    if hot_reload is not None:
+        await hot_reload.startup()
     yield
+    if hot_reload is not None:
+        await hot_reload.shutdown()
     await engine.dispose()
     log.info("shutdown")
 
@@ -86,5 +113,14 @@ app.include_router(blog.router)
 # the /{slug} catch-all so /dev/preview/* always wins the match.
 if settings.debug:
     app.include_router(dev.router)
+# Live-reload socket and the client snippet the layout injects. Same debug
+# gate: the route and the `hot_reload` template global only exist locally.
+if hot_reload is not None:
+    from app.templating import templates
+
+    # arel's HotReload is a full ASGI app, which is wider than the
+    # WebSocket-handler signature add_websocket_route is typed for.
+    app.add_websocket_route("/hot-reload", route=hot_reload, name="hot-reload")  # type: ignore[arg-type]
+    templates.env.globals["hot_reload"] = hot_reload
 # pages last: its /{slug} catch-all would otherwise shadow everything above.
 app.include_router(pages.router)

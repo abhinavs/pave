@@ -32,6 +32,12 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 
+# arel is a dev-only live-reload helper with no type stubs. It is imported
+# behind a debug guard in app/main.py and never ships to production.
+[[tool.mypy.overrides]]
+module = "arel.*"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["."]

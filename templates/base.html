@@ -296,5 +296,12 @@
       src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"
     ></script>
     {% block scripts %}{% endblock %}
+
+    {# Dev-only live-reload. The `hot_reload` global is registered in
+       app/main.py only under debug, so this snippet is absent in production
+       and the websocket it opens never exists there. #}
+    {% if hot_reload %}
+      {{ hot_reload.script(url_for('hot-reload')) | safe }}
+    {% endif %}
   </body>
 </html>
